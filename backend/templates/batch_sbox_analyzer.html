@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Batch S-Box Analyzer - S-Box Analyzer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg1: #120024;
+      --bg2: #1e0d35;
+      --accent: #8c5bff;
+      --accent2: #bfa5ff;
+      --text: #f3ecff;
+      --muted: #d6d0ff;
+    }
+    body { background: linear-gradient(135deg, var(--bg1), var(--bg2)); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height: 100vh; padding: 32px; }
+    .hero { background: linear-gradient(135deg, rgba(124, 58, 237, 0.3) 0%, rgba(167, 139, 250, 0.1) 100%); border-radius: 20px; padding: 32px; border: 1px solid rgba(167, 139, 250, 0.4); margin-bottom: 24px; }
+    .card-glass { background: rgba(255,255,255,0.04); border: 1px solid rgba(140,91,255,0.35); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+    .section-title { color: var(--accent2); font-weight: 700; margin-bottom: 12px; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; font-weight: 700; color: #0d021f; }
+    .btn-primary:hover { filter: brightness(1.05); color: #0d021f; }
+    .btn-outline-light { border-color: rgba(140,91,255,0.5); color: var(--text); }
+    .btn-outline-light:hover { background: rgba(140,91,255,0.15); color: #fff; }
+    .form-control, .form-select { background: rgba(20,10,40,0.8); border: 1px solid rgba(140,91,255,0.2); color: var(--text); }
+    .form-label { color: var(--accent2); }
+    .checkbox-matrix { padding: 12px; background: rgba(140,91,255,0.1); border: 1px solid rgba(140,91,255,0.3); border-radius: 8px; margin-bottom: 8px; }
+    .checkbox-matrix input[type="checkbox"] { width: 18px; height: 18px; margin-right: 8px; }
+    .table-results { margin-top: 24px; }
+    .table { color: var(--text); }
+    .table thead th { background: rgba(140,91,255,0.2); color: var(--accent2); border: 1px solid rgba(140,91,255,0.3); }
+    .table tbody td { border: 1px solid rgba(140,91,255,0.2); }
+    .table tbody tr:hover { background: rgba(140,91,255,0.1); }
+    .metric-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; }
+    .badge-good { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .badge-fair { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .badge-warn { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .loading-spinner { display: none; text-align: center; padding: 24px; }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 1600px;">
+    <!-- Header -->
+    <div class="hero">
+      <div class="d-flex align-items-center justify-content-between flex-wrap">
+        <div>
+          <h1 class="h3 mb-1">🔄 Multi-Matrix S-Box Batch Analyzer</h1>
+          <p class="muted mb-0">Generate and compare S-boxes from multiple affine matrices with comprehensive cryptographic strength testing</p>
+        </div>
+        <a href="/aes" class="btn btn-outline-light btn-sm">← Back to AES</a>
+      </div>
+    </div>
+
+    <!-- Configuration Section -->
+    <div class="card-glass p-4 mb-4">
+      <h5 class="section-title mb-3">⚙️ Configuration</h5>
+      
+      <div class="row g-3">
+        <!-- Matrix Selection -->
+        <div class="col-lg-6">
+          <label class="form-label fw-bold">Select Matrices to Analyze</label>
+          <div class="checkbox-matrix">
+            <div><label><input type="checkbox" class="matrix-select" value="k44" checked> <strong>K44</strong> (Best Performer) - NL=112, SAC=0.5007</label></div>
+          </div>
+          <div class="checkbox-matrix">
+            <div><label><input type="checkbox" class="matrix-select" value="k43" checked> <strong>K43</strong> - Alternative from paper</label></div>
+          </div>
+          <div class="checkbox-matrix">
+            <div><label><input type="checkbox" class="matrix-select" value="k45" checked> <strong>K45</strong> - Alternative from paper</label></div>
+          </div>
+          <div class="checkbox-matrix">
+            <div><label><input type="checkbox" class="matrix-select" value="aes" checked> <strong>AES Standard</strong> - Rijndael matrix</label></div>
+          </div>
+          <div class="checkbox-matrix">
+            <div><label><input type="checkbox" class="matrix-select" value="identity"> <strong>Identity</strong> - Control/baseline</label></div>
+          </div>
+          <div class="checkbox-matrix">
+            <div><label><input type="checkbox" class="matrix-select" value="k44-rotated"> <strong>K44 Rotated</strong> - Comparison variant</label></div>
+          </div>
+        </div>
+
+        <!-- Parameters -->
+        <div class="col-lg-6">
+          <div>
+            <label class="form-label fw-bold">Affine Constant (hex)</label>
+            <input type="text" class="form-control mb-2" id="constant-input" value="63" placeholder="63" />
+            <div class="small muted mb-3">0x63 = AES default. Format: hex or decimal</div>
+          </div>
+
+          <div>
+            <label class="form-label fw-bold">GF(2⁸) Polynomial</label>
+            <select class="form-select mb-2" id="polynomial-input">
+              <option value="11B" selected>0x11B (Standard AES polynomial)</option>
+              <option value="11D">0x11D (Alternative)</option>
+              <option value="163">0x163 (Alternative)</option>
+            </select>
+            <div class="small muted">Irreducible polynomial for GF(2⁸)</div>
+          </div>
+
+          <button class="btn btn-primary w-100 mt-3" id="btn-analyze">🚀 Generate & Analyze All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading & Status -->
+    <div class="loading-spinner" id="loading-spinner">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="muted mt-2">Processing matrices... This may take a moment</p>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results-section" style="display: none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="section-title mb-0">📊 Cryptographic Analysis Results</h5>
+        <div class="btn-group" role="group">
+          <button class="btn btn-outline-light btn-sm" id="btn-export-csv">📥 CSV</button>
+          <button class="btn btn-outline-light btn-sm" id="btn-export-excel">📊 Excel</button>
+        </div>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="row g-2 mb-4" id="summary-stats">
+        <!-- Will be populated -->
+      </div>
+
+      <!-- Detailed Metrics Table -->
+      <div class="table-responsive table-results">
+        <table class="table table-sm" id="results-table">
+          <thead>
+            <tr>
+              <th>Matrix</th>
+              <th>Bijective</th>
+              <th>Balanced</th>
+              <th>NL</th>
+              <th>SAC</th>
+              <th>BIC-NL</th>
+              <th>BIC-SAC</th>
+              <th>LAP</th>
+              <th>DAP</th>
+              <th>DU</th>
+              <th>ALG-DEG</th>
+              <th>TG</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Will be populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Comparison Chart -->
+      <div class="card-glass p-4 mt-4">
+        <h6 class="section-title mb-3">Comparison Chart</h6>
+        <div style="position: relative; height: 400px; width: 100%;">
+          <canvas id="comparison-chart" style="max-height: 400px;"></canvas>
+        </div>
+      </div>
+
+      <!-- Best Performers -->
+      <div class="row g-3 mt-4">
+        <div class="col-md-6">
+          <div class="card-glass p-3">
+            <h6 class="section-title mb-2">🏆 Best by Nonlinearity (NL)</h6>
+            <div id="best-nl"></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card-glass p-3">
+            <h6 class="section-title mb-2">🎯 Best Overall Score</h6>
+            <div id="best-overall"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const matrices = {
+      k44: [[0,1,0,1,0,1,1,1],[1,0,1,0,1,0,1,1],[1,1,0,1,0,1,0,1],[1,1,1,0,1,0,1,0],[0,1,1,1,0,1,0,1],[1,0,1,1,1,0,1,0],[0,1,0,1,1,1,0,1],[1,0,1,0,1,1,1,0]],
+      k43: [[0,1,0,1,0,0,1,1],[1,0,1,0,1,0,0,1],[1,1,0,1,0,1,0,0],[0,1,1,0,1,0,1,1],[0,0,1,1,0,1,1,1],[1,1,0,0,1,1,1,0],[0,1,1,1,0,1,1,1],[1,0,0,1,1,1,1,0]],
+      k45: [[0,1,1,1,0,1,0,1],[1,0,1,1,0,1,0,1],[0,1,0,1,0,1,0,1],[1,1,0,0,0,1,0,1],[0,0,0,0,1,1,1,1],[0,0,0,1,1,1,1,1],[0,0,1,0,1,1,1,0],[0,1,0,1,1,1,0,0]],
+      aes: [[1,1,1,1,1,0,0,0],[0,1,1,1,1,1,0,0],[0,0,1,1,1,1,1,0],[0,0,0,1,1,1,1,1],[1,0,0,0,1,1,1,1],[1,1,0,0,0,1,1,1],[1,1,1,0,0,0,1,1],[1,1,1,1,0,0,0,1]],
+      identity: [[1,0,0,0,0,0,0,0],[0,1,0,0,0,0,0,0],[0,0,1,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,1,0,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,1]],
+      'k44-rotated': [[0,1,1,1,0,1,0,1],[0,1,0,1,0,1,1,1],[1,0,1,0,1,0,1,1],[1,1,0,1,0,1,0,1],[1,1,1,0,1,0,1,0],[0,1,1,1,0,1,0,1],[1,0,1,1,1,0,1,0],[0,1,0,1,1,1,0,1]]
+    };
+
+    let allResults = [];
+    let chartInstance = null;
+
+    document.getElementById('btn-analyze').addEventListener('click', async () => {
+      const selected = Array.from(document.querySelectorAll('.matrix-select:checked')).map(el => el.value);
+      const constant = document.getElementById('constant-input').value || '63';
+      const polynomial = document.getElementById('polynomial-input').value;
+
+      if (selected.length === 0) {
+        alert('Select at least one matrix');
+        return;
+      }
+
+      document.getElementById('loading-spinner').style.display = 'block';
+      document.getElementById('results-section').style.display = 'none';
+
+      try {
+        const tasks = selected.map(matrixKey => {
+          const matrix = matrices[matrixKey];
+          const matrixData = matrix.map(row => row.map(x => parseInt(x)));
+          return fetch('/api/sbox/generate-from-matrix', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ matrix: matrixData, constant, polynomial })
+          }).then(res => res.json()).then(data => ({
+            key: matrixKey,
+            name: getMatrixName(matrixKey),
+            ...data
+          }));
+        });
+
+        allResults = await Promise.all(tasks);
+        renderResults();
+        document.getElementById('results-section').style.display = 'block';
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        document.getElementById('loading-spinner').style.display = 'none';
+      }
+    });
+
+    function getMatrixName(key) {
+      const names = {
+        k44: 'K44 (Best Performer)',
+        k43: 'K43',
+        k45: 'K45',
+        aes: 'AES Standard',
+        identity: 'Identity',
+        'k44-rotated': 'K44 Rotated'
+      };
+      return names[key] || key;
+    }
+
+    function renderResults() {
+      const tbody = document.querySelector('#results-table tbody');
+      tbody.innerHTML = '';
+
+      allResults.forEach(result => {
+        const metrics = result.metrics || {};
+        const score = calculateScore(metrics);
+        
+        const row = `<tr>
+          <td><strong>${result.name}</strong></td>
+          <td>${metrics.bijective ? '✓' : '✗'}</td>
+          <td>${metrics.balanced ? '✓' : '✗'}</td>
+          <td><span class="metric-badge ${getMetricClass(metrics.nl)}">${metrics.nl || '-'}</span></td>
+          <td>${(metrics.sac || 0).toFixed(4)}</td>
+          <td><span class="metric-badge ${getMetricClass(metrics.bic_nl)}">${metrics.bic_nl || '-'}</span></td>
+          <td>${(metrics.bic_sac || 0).toFixed(4)}</td>
+          <td>${metrics.lap || '-'}</td>
+          <td>${(metrics.dap_prob || 0).toFixed(4)}</td>
+          <td>${metrics.du || '-'}</td>
+          <td>${metrics.alg_deg || '-'}</td>
+          <td>${(metrics.tg || 0).toFixed(4)}</td>
+          <td><strong>${score.toFixed(2)}</strong></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+
+      renderSummary();
+      renderChart();
+      renderBestPerformers();
+    }
+
+    function calculateScore(metrics) {
+      // Weighted scoring: NL (30%) + SAC (20%) + BIC-NL (20%) + DU (15%) + TG (15%)
+      const nl = (metrics.nl || 0) / 112;
+      const sac = (metrics.sac || 0) / 0.5;
+      const bicNl = (metrics.bic_nl || 0) / 112;
+      const du = 1 / (1 + (metrics.du || 1));
+      const tg = (metrics.tg || 0) / 0.5;
+
+      return (nl * 0.3 + sac * 0.2 + bicNl * 0.2 + du * 0.15 + tg * 0.15) * 100;
+    }
+
+    function getMetricClass(value) {
+      if (!value) return 'badge-warn';
+      if (value >= 110) return 'badge-good';
+      if (value >= 100) return 'badge-fair';
+      return 'badge-warn';
+    }
+
+    function renderSummary() {
+      const statsDiv = document.getElementById('summary-stats');
+      const bestNL = Math.max(...allResults.map(r => r.metrics?.nl || 0));
+      const bestSAC = Math.max(...allResults.map(r => r.metrics?.sac || 0));
+      const bestScore = Math.max(...allResults.map(r => calculateScore(r.metrics || {})));
+
+      statsDiv.innerHTML = `
+        <div class="col-md-4">
+          <div class="card-glass p-3 text-center">
+            <div class="small muted">Best Nonlinearity</div>
+            <div class="h4 mb-0" style="color: var(--accent2);">${bestNL}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card-glass p-3 text-center">
+            <div class="small muted">Best SAC Value</div>
+            <div class="h4 mb-0" style="color: var(--accent2);">${bestSAC.toFixed(4)}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card-glass p-3 text-center">
+            <div class="small muted">Best Overall Score</div>
+            <div class="h4 mb-0" style="color: var(--accent2);">${bestScore.toFixed(2)}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderChart() {
+      const canvas = document.getElementById('comparison-chart');
+      
+      // Destroy old chart if exists
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+      
+      const ctx = canvas.getContext('2d');
+      const labels = allResults.map(r => r.name);
+      const nlData = allResults.map(r => r.metrics?.nl || 0);
+      const sacData = allResults.map(r => (r.metrics?.sac || 0) * 100);
+      const bicNlData = allResults.map(r => r.metrics?.bic_nl || 0);
+
+      chartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'NL (max 112)', data: nlData, borderColor: '#8c5bff', backgroundColor: 'rgba(140,91,255,0.1)', borderWidth: 2 },
+            { label: 'SAC (×100)', data: sacData, borderColor: '#20c997', backgroundColor: 'rgba(32,201,151,0.1)', borderWidth: 2 },
+            { label: 'BIC-NL (max 112)', data: bicNlData, borderColor: '#ffc107', backgroundColor: 'rgba(255,193,7,0.1)', borderWidth: 2 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { 
+            r: { 
+              beginAtZero: true, 
+              max: 120, 
+              grid: { color: 'rgba(140,91,255,0.2)' }, 
+              ticks: { color: 'var(--muted)', font: { size: 11 } },
+              pointLabels: { color: '#bfa5ff', font: { size: 12, weight: 'bold' }, padding: 8 }
+            } 
+          },
+          plugins: { 
+            legend: { labels: { color: 'var(--text)', font: { size: 12 } } },
+            tooltip: { titleColor: '#f3ecff', bodyColor: '#f3ecff', backgroundColor: 'rgba(18,0,36,0.9)' }
+          }
+        }
+      });
+    }
+
+    function renderBestPerformers() {
+      const bestNL = allResults.reduce((a, b) => (b.metrics?.nl || 0) > (a.metrics?.nl || 0) ? b : a);
+      const bestScore = allResults.reduce((a, b) => calculateScore(b.metrics || {}) > calculateScore(a.metrics || {}) ? b : a);
+
+      document.getElementById('best-nl').innerHTML = `
+        <p><strong>${bestNL.name}</strong></p>
+        <small class="muted">Nonlinearity: ${bestNL.metrics?.nl || '-'}</small><br>
+        <small class="muted">SAC: ${(bestNL.metrics?.sac || 0).toFixed(4)}</small>
+      `;
+
+      document.getElementById('best-overall').innerHTML = `
+        <p><strong>${bestScore.name}</strong></p>
+        <small class="muted">Overall Score: ${calculateScore(bestScore.metrics || {}).toFixed(2)}</small><br>
+        <small class="muted">NL: ${bestScore.metrics?.nl || '-'}</small>
+      `;
+    }
+
+    document.getElementById('btn-export-csv').addEventListener('click', () => {
+      let csv = 'Matrix,Bijective,Balanced,NL,SAC,BIC-NL,BIC-SAC,LAP,DAP,DU,ALG-DEG,TG,Score\n';
+      allResults.forEach(result => {
+        const metrics = result.metrics || {};
+        csv += `${result.name},${metrics.bijective ? 'Yes' : 'No'},${metrics.balanced ? 'Yes' : 'No'},${metrics.nl},${(metrics.sac || 0).toFixed(4)},${metrics.bic_nl},${(metrics.bic_sac || 0).toFixed(4)},${metrics.lap},${(metrics.dap_prob || 0).toFixed(4)},${metrics.du},${metrics.alg_deg},${(metrics.tg || 0).toFixed(4)},${calculateScore(metrics).toFixed(2)}\n`;
+      });
+      const a = document.createElement('a');
+      a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+      a.download = 'batch_sbox_analysis.csv';
+      a.click();
+    });
+
+    document.getElementById('btn-export-excel').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/batch-export-excel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(allResults)
+        });
+        
+        if (!response.ok) throw new Error('Failed to generate Excel');
+        
+        const blob = await response.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'batch_sbox_analysis.xlsx';
+        a.click();
+      } catch (err) {
+        alert('Error exporting to Excel: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

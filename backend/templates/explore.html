@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Matrix Explorer - S-Box Analyzer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #1a0033 0%, #2d1047 50%, #1a0033 100%);
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      padding: 32px;
+    }
+    .card { background: rgba(45, 16, 71, 0.6); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 16px; box-shadow: 0 8px 32px rgba(124, 58, 237, 0.1); }
+    .section-title { font-weight: 700; color: #a78bfa; margin-bottom: 12px; }
+    .pill { display: inline-block; padding: 8px 16px; border-radius: 999px; background: linear-gradient(135deg, #7c3aed, #a78bfa); color: white; font-weight: 600; font-size: 0.875rem; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4); }
+    .hero { background: linear-gradient(135deg, rgba(124, 58, 237, 0.3) 0%, rgba(167, 139, 250, 0.1) 100%); border-radius: 20px; padding: 24px 32px; border: 1px solid rgba(167, 139, 250, 0.4); }
+    .metric-badge { padding: 6px 12px; border-radius: 10px; font-size: 0.875rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-success { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-warning { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-danger { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .table { border-collapse: separate; border-spacing: 0 8px; }
+    .table tbody tr { background: rgba(20, 10, 40, 0.6); box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1); }
+    .table tbody tr:hover { box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2); transform: translateY(-1px); transition: all 0.2s; }
+    .table tbody td { border: none; padding: 16px; vertical-align: middle; color: #e0e0e0; }
+    .table tbody td:first-child { border-radius: 12px 0 0 12px; }
+    .table tbody td:last-child { border-radius: 0 12px 12px 0; }
+    .table thead th { border: none; padding: 12px 16px; font-size: 0.875rem; font-weight: 600; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-control, .form-select { background: rgba(20, 10, 40, 0.8); border: 1px solid rgba(167, 139, 250, 0.2); color: #e0e0e0; }
+    .form-label, .text-muted { color: #d9d4ff !important; }
+    .btn-primary { background: linear-gradient(135deg, #7c3aed, #a78bfa); border: none; }
+    .footer-credit { text-align: center; padding: 24px; color: #9d9d9d; font-size: 0.9rem; }
+    @media (max-width: 768px) {
+      body { padding: 16px; }
+      .hero { flex-direction: column; align-items: flex-start !important; gap: 16px; }
+      .pill { width: 100%; text-align: center; }
+      .section-title { font-size: 1.1rem; }
+      .table { font-size: 0.8rem; }
+      .table tbody td { padding: 10px 8px; }
+      .alert { font-size: 0.85rem; }
+      .form-control { font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 1400px;">
+    <!-- Header -->
+    <div class="hero mb-4 d-flex align-items-center justify-content-between flex-wrap">
+      <div>
+        <h1 class="h3 mb-1">🔬 Research Parameters</h1>
+        <div class="text-muted">Adjust S-box generation parameters</div>
+      </div>
+      <a href="/analyzer" class="pill text-decoration-none">← Back to Analyzer</a>
+    </div>
+
+    <!-- Main Parameters Card -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div class="section-title mb-0">Affine Transformation Matrix</div>
+          <button type="button" class="btn btn-sm btn-outline-light" id="btn-reset">Reset</button>
+        </div>
+
+        <div class="row g-4">
+          <!-- Left Column: Matrix Selection -->
+          <div class="col-lg-7">
+            <!-- Matrix Type Tabs -->
+            <div class="btn-group w-100 mb-3" role="group">
+              <input type="radio" class="btn-check" name="matrix-type" id="tab-paper" autocomplete="off" checked>
+              <label class="btn btn-outline-light" for="tab-paper">Paper</label>
+              
+              <input type="radio" class="btn-check" name="matrix-type" id="tab-standard" autocomplete="off">
+              <label class="btn btn-outline-light" for="tab-standard">Standard</label>
+              
+              <input type="radio" class="btn-check" name="matrix-type" id="tab-variations" autocomplete="off">
+              <label class="btn btn-outline-light" for="tab-variations">Variations</label>
+              
+              <input type="radio" class="btn-check" name="matrix-type" id="tab-custom" autocomplete="off">
+              <label class="btn btn-outline-light" for="tab-custom">Custom</label>
+            </div>
+
+            <!-- Matrix Presets -->
+            <div id="preset-paper" class="preset-group">
+              <div class="list-group mb-3">
+                <button type="button" class="list-group-item list-group-item-action preset-item active" data-matrix="k44">
+                  <div class="fw-bold">K44 Matrix (Best Performer)</div>
+                  <small class="text-muted">NL=112, SAC=0.50073, BIC-NL=112</small>
+                </button>
+                <button type="button" class="list-group-item list-group-item-action preset-item" data-matrix="k43">
+                  <div class="fw-bold">K43 Matrix</div>
+                  <small class="text-muted">Alternative from paper exploration</small>
+                </button>
+                <button type="button" class="list-group-item list-group-item-action preset-item" data-matrix="k45">
+                  <div class="fw-bold">K45 Matrix</div>
+                  <small class="text-muted">Alternative from paper exploration</small>
+                </button>
+              </div>
+            </div>
+
+            <div id="preset-standard" class="preset-group" style="display:none;">
+              <div class="list-group mb-3">
+                <button type="button" class="list-group-item list-group-item-action preset-item" data-matrix="aes">
+                  <div class="fw-bold">AES Matrix (Rijndael)</div>
+                  <small class="text-muted">Standard AES S-box matrix</small>
+                </button>
+              </div>
+            </div>
+
+            <div id="preset-variations" class="preset-group" style="display:none;">
+              <div class="list-group mb-3">
+                <button type="button" class="list-group-item list-group-item-action preset-item" data-matrix="identity">
+                  <div class="fw-bold">Identity Matrix</div>
+                  <small class="text-muted">For testing and comparison</small>
+                </button>
+                <button type="button" class="list-group-item list-group-item-action preset-item" data-matrix="k44-rotated">
+                  <div class="fw-bold">K44 Rotated</div>
+                  <small class="text-muted">Rotated version of K44 for comparison</small>
+                </button>
+              </div>
+            </div>
+
+            <div id="preset-custom" class="preset-group" style="display:none;">
+              <p class="text-muted mb-2">Enter 8 rows as binary or hex:</p>
+              <div id="custom-matrix-inputs">
+                <div class="row g-2 mb-2" id="matrix-row-0">
+                  <div class="col-2"><label class="form-label small">R0:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="0" placeholder="01010111" /></div>
+                  <div class="col-3"><span class="hex-preview small text-muted">0x57</span></div>
+                </div>
+                <div class="row g-2 mb-2" id="matrix-row-1">
+                  <div class="col-2"><label class="form-label small">R1:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="1" placeholder="10101011" /></div>
+                  <div class="col-3"><span class="hex-preview small text-muted">0xAB</span></div>
+                </div>
+                <div class="row g-2 mb-2" id="matrix-row-2">
+                  <div class="col-2"><label class="form-label small">R2:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="2" placeholder="11010101" /></div>
+                  <div class="col-3"><span class="hex-preview small text-muted">0xD5</span></div>
+                </div>
+                <div class="row g-2 mb-2" id="matrix-row-3">
+                  <div class="col-2"><label class="form-label small">R3:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="3" placeholder="11101010" /></div>
+                  <div class="col-3"><span class="hex-preview small text-muted">0xEA</span></div>
+                </div>
+                <div class="row g-2 mb-2" id="matrix-row-4">
+                  <div class="col-2"><label class="form-label small">R4:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="4" placeholder="01110101" /></div>
+                  <div class="col-3"><span class="hex-preview small text-muted">0x75</span></div>
+                </div>
+                <div class="row g-2 mb-2" id="matrix-row-5">
+                  <div class="col-2"><label class="form-label small">R5:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="5" placeholder="10111010" /></div>
+                  <div class="col-3"><span class="hex-preview small text-muted">0xBA</span></div>
+                </div>
+                <div class="row g-2 mb-2" id="matrix-row-6">
+                  <div class="col-2"><label class="form-label small">R6:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="6" placeholder="01011101" /></div>
+                  <div class="col-3"><span class="hex-preview small text-muted">0x5D</span></div>
+                </div>
+                <div class="row g-2 mb-2" id="matrix-row-7">
+                  <div class="col-2"><label class="form-label small">R7:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="7" placeholder="10101110" /></div>
+                  <div class="col-3"><span class="hex-preview small text-muted">0xAE</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Current Matrix Display -->
+            <div class="card mt-3" style="background: rgba(20,10,40,0.8); border-color: rgba(167,139,250,0.3);">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="mb-0 text-light">Current Matrix:</h6>
+                  <button type="button" class="btn btn-sm btn-link" id="btn-edit-matrix">Edit</button>
+                </div>
+                <div id="matrix-display" class="font-monospace small" style="line-height: 1.6;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Constant Vector -->
+          <div class="col-lg-5">
+            <h6 class="mb-3">Constant Vector (C)</h6>
+            <input type="text" class="form-control form-control-lg mb-2" id="constant-input" placeholder="63" />
+            <div class="text-muted small mb-3">Hex/decimal. Current: <span id="constant-current">0x63 (99)</span></div>
+            
+            <div class="mb-3">
+              <div class="fw-bold small mb-2">Quick Presets:</div>
+              <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline-light constant-preset" data-value="99">0x63</button>
+                <button class="btn btn-sm btn-outline-light constant-preset" data-value="0">0x0</button>
+                <button class="btn btn-sm btn-outline-light constant-preset" data-value="255">0xFF</button>
+                <button class="btn btn-sm btn-outline-light constant-preset" data-value="170">0xAA</button>
+                <button class="btn btn-sm btn-outline-light constant-preset" data-value="85">0x55</button>
+              </div>
+            </div>
+
+            <!-- Active Parameters -->
+            <div class="card mt-4" style="background: rgba(124,58,237,0.1); border-color: rgba(167,139,250,0.3);">
+              <div class="card-body">
+                <h6 class="mb-2 text-light">Active Parameters:</h6>
+                <div id="active-params" class="font-monospace small text-light" style="line-height: 1.8;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parameter Presets -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="section-title mb-3">Parameter Presets</h5>
+        <div class="row g-3">
+          <div class="col-md-8">
+            <input type="text" class="form-control" id="preset-name" placeholder="Preset name..." />
+          </div>
+          <div class="col-md-4">
+            <button type="button" class="btn btn-primary w-100" id="btn-save-preset">Save</button>
+          </div>
+        </div>
+        <div id="saved-presets" class="mt-3"></div>
+      </div>
+    </div>
+
+    <!-- Exploration Section -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="section-title mb-3">Exploration Settings</div>
+        <form id="explore-form" class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Jumlah Kandidat</label>
+            <input type="number" class="form-control" id="n-candidates" value="50" min="10" max="200">
+            <small class="text-muted">Max 200 untuk performa</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Top N Results</label>
+            <input type="number" class="form-control" id="top-n" value="10" min="5" max="50">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Random Seed (opsional)</label>
+            <input type="number" class="form-control" id="seed" placeholder="leave empty for random">
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary btn-lg px-4" id="explore-btn">
+              <span id="btn-text">🚀 Start Exploration</span>
+              <span id="btn-spinner" class="spinner-border spinner-border-sm ms-2" style="display:none;"></span>
+            </button>
+            <div id="status" class="mt-3 p-3 rounded" style="display:none;"></div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="results-section" style="display:none;">
+      <div class="card">
+        <div class="card-body">
+          <div class="section-title mb-3">Top Candidates (Ranked by Nonlinearity)</div>
+          <div class="table-responsive">
+            <table class="table table-hover" id="results-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Bijective</th>
+                  <th>Balanced</th>
+                  <th>SAC</th>
+                  <th>Nonlinearity</th>
+                  <th>Diff. Uniformity</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const form = document.getElementById('explore-form');
+    const status = document.getElementById('status');
+    const resultsSection = document.getElementById('results-section');
+    const tableBody = document.querySelector('#results-table tbody');
+
+    let currentResults = [];
+
+    const exploreBtn = document.getElementById('explore-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnSpinner = document.getElementById('btn-spinner');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const n = document.getElementById('n-candidates').value;
+      const top = document.getElementById('top-n').value;
+      const seed = document.getElementById('seed').value;
+      
+      // Show loading state
+      exploreBtn.disabled = true;
+      btnText.textContent = 'Exploring...';
+      btnSpinner.style.display = 'inline-block';
+      status.style.display = 'block';
+      status.className = 'mt-3 p-3 rounded bg-info bg-opacity-10 border border-info';
+      status.innerHTML = `<strong>⏳ Processing ${n} candidates...</strong><br><small>This may take 10-30 seconds depending on your CPU</small>`;
+      resultsSection.style.display = 'none';
+      tableBody.innerHTML = '';
+      
+      try {
+        let url = `/api/explore-matrices?n=${n}&top=${top}`;
+        if (seed) url += `&seed=${seed}`;
+        
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(await res.text());
+        
+        const data = await res.json();
+        currentResults = data.candidates;
+        
+        // Show success
+        status.className = 'mt-3 p-3 rounded bg-success bg-opacity-10 border border-success';
+        status.innerHTML = `<strong>✅ Success!</strong> Tested ${data.total_tested} candidates, showing top ${data.top_n} best results.`;
+        
+        renderResults(data.candidates);
+        resultsSection.style.display = 'block';
+        
+      } catch (err) {
+        status.className = 'mt-3 p-3 rounded bg-danger bg-opacity-10 border border-danger';
+        status.innerHTML = `<strong>❌ Error:</strong> ${err.message}`;
+      } finally {
+        exploreBtn.disabled = false;
+        btnText.textContent = '🚀 Start Exploration';
+        btnSpinner.style.display = 'none';
+      }
+    });
+
+    function renderResults(candidates) {
+      tableBody.innerHTML = '';
+      
+      candidates.forEach((c, idx) => {
+        const row = document.createElement('tr');
+        
+        const badgeClass = c.bijective && c.balanced && c.sac ? 'badge-success' : 'badge-warning';
+        
+        row.innerHTML = `
+          <td><strong>#${c.id}</strong></td>
+          <td><span class="metric-badge ${c.bijective ? 'badge-success' : 'badge-danger'}">${c.bijective ? '✓' : '✗'}</span></td>
+          <td><span class="metric-badge ${c.balanced ? 'badge-success' : 'badge-danger'}">${c.balanced ? '✓' : '✗'}</span></td>
+          <td><span class="metric-badge ${c.sac ? 'badge-success' : 'badge-danger'}">${c.sac ? '✓' : '✗'}</span></td>
+          <td><strong>${c.nonlinearity}</strong></td>
+          <td>${c.diff_uniformity}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" onclick="downloadCandidate(${idx})">Download Excel</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    async function downloadCandidate(idx) {
+      const c = currentResults[idx];
+      
+      try {
+        const res = await fetch(`/api/download-candidate/${c.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            matrix: c.matrix,
+            constant: c.constant
+          })
+        });
+        
+        if (!res.ok) throw new Error(await res.text());
+        
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `candidate_${c.id}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+      } catch (err) {
+        alert('Error downloading: ' + err.message);
+      }
+    }
+  </script>
+
+  <div class="footer-credit">
+    &copy; 2025 S-Box Analyzer | Developed by Davina Azalia Tara
+  </div>
+</body>
+</html>

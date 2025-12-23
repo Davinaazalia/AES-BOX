@@ -1,0 +1,92 @@
+.sbox-section {
+  margin-top: 2rem;
+}
+
+.sbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.btn-copy {
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid var(--purple-primary);
+  color: var(--purple-light);
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.btn-copy:hover {
+  background: rgba(167, 139, 250, 0.2);
+  color: var(--purple-lighter);
+}
+
+.sbox-table-wrapper {
+  overflow-x: auto;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.sbox-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.sbox-table th,
+.sbox-table td {
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.sbox-table thead th {
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--purple-light);
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+}
+
+.sbox-table tbody th {
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--purple-light);
+  font-weight: 700;
+}
+
+.sbox-table td {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.sbox-table tbody tr:hover {
+  background: rgba(167, 139, 250, 0.1);
+}
+
+@media (max-width: 768px) {
+  .sbox-table {
+    font-size: 0.75rem;
+  }
+  
+  .sbox-table th,
+  .sbox-table td {
+    padding: 0.35rem;
+  }
+  
+  .sbox-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .btn-copy {
+    width: 100%;
+  }
+}

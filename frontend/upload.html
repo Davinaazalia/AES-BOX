@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Upload S-Box</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Upload S-Box</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="generate.html">Generate</a>
+      <a href="test.html">Test</a>
+      <a href="deploy.html">Deploy</a>
+    </nav>
+  </header>
+  <main>
+    <form id="upload-form">
+      <label>Excel (.xlsx/.xls)
+        <input type="file" name="sbox" accept=".xlsx,.xls" required>
+      </label>
+      <label>Sample Image (optional)
+        <input type="file" name="sample_img" accept="image/*">
+      </label>
+      <button type="submit">Upload & Analyze</button>
+    </form>
+    <div id="analysis"></div>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/upload.js"></script>
+</body>
+</html>

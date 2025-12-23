@@ -1,0 +1,29 @@
+.histogram-wrapper {
+  background: rgba(20, 10, 40, 0.6);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.histogram-title {
+  color: #a78bfa;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.histogram-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.histogram-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}

@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S-Box Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg1: #0f0a1f;
+            --bg2: #1a0f2e;
+            --accent: #8c5bff;
+            --accent2: #bfa5ff;
+            --text: #f3ecff;
+            --muted: #d6d0ff;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--bg1), var(--bg2));
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container-main {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .navbar-custom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(140, 91, 255, 0.1);
+            border: 1px solid rgba(140, 91, 255, 0.3);
+            border-radius: 12px;
+        }
+        
+        .navbar-custom a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .navbar-custom a:hover {
+            color: var(--accent2);
+        }
+        
+        .btn-back {
+            padding: 0.5rem 1rem;
+            background: rgba(140, 91, 255, 0.2);
+            border: 1px solid rgba(140, 91, 255, 0.5);
+            color: var(--text);
+            border-radius: 6px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-back:hover {
+            background: rgba(140, 91, 255, 0.3);
+            color: var(--accent2);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent2), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: var(--muted);
+            font-size: 1.1rem;
+        }
+        
+        .card-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(140, 91, 255, 0.3);
+            border-radius: 14px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-glass h3 {
+            color: var(--accent2);
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            color: var(--accent2);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .form-control {
+            background: rgba(20, 10, 40, 0.8);
+            border: 1px solid rgba(140, 91, 255, 0.3);
+            color: var(--text);
+            padding: 0.75rem;
+            border-radius: 8px;
+        }
+        
+        .form-control:focus {
+            background: rgba(20, 10, 40, 0.9);
+            border-color: var(--accent);
+            color: var(--text);
+            box-shadow: 0 0 0 0.2rem rgba(140, 91, 255, 0.25);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none;
+            color: #0d021f;
+            font-weight: 700;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(140, 91, 255, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .alert-success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            color: #10b981;
+        }
+        
+        .alert-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #ef4444;
+        }
+        
+        .alert-info {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            color: #3b82f6;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .metric-card {
+            background: rgba(140, 91, 255, 0.1);
+            border: 1px solid rgba(140, 91, 255, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .metric-label {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent2);
+        }
+        
+        .metric-status {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        
+        .status-true { color: var(--success); }
+        .status-false { color: var(--danger); }
+        
+        .sbox-table {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 4px;
+            margin: 2rem 0;
+            max-width: 100%;
+        }
+        
+        .sbox-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(140, 91, 255, 0.2);
+            border: 1px solid rgba(140, 91, 255, 0.4);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent2);
+        }
+        
+        .histogram-container {
+            margin: 2rem 0;
+        }
+        
+        .histogram-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .histogram-wrapper {
+            background: rgba(140, 91, 255, 0.1);
+            border: 1px solid rgba(140, 91, 255, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        
+        .histogram-title {
+            color: var(--accent2);
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .histogram-canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(140, 91, 255, 0.2);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results-section {
+            display: none;
+        }
+        
+        .results-section.active {
+            display: block;
+        }
+        
+        .section-title {
+            color: var(--accent2);
+            font-weight: 700;
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(140, 91, 255, 0.3);
+        }
+        
+        .help-text {
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-main">
+        <!-- Navbar -->
+        <div class="navbar-custom">
+            <a href="/">🔐 S-Box Analyzer</a>
+            <a href="/" class="btn-back">← Back to Home</a>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 S-Box Analyzer</h1>
+            <p>Upload dan analisis S-box dengan metrik lengkap + histogram</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card-glass">
+            <h3>📤 Upload & Analisis S-Box</h3>
+            
+            <div id="alert-container"></div>
+            
+            <div id="upload-form-section">
+                <form id="upload-form">
+                    <div class="form-group">
+                        <label for="sbox-file">S-Box File (Excel 16×16) *</label>
+                        <input type="file" id="sbox-file" class="form-control" accept=".xlsx,.xls" required>
+                        <div class="help-text">Format Excel dengan tabel 16×16 S-box</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="image-file">Gambar Sample (Opsional)</label>
+                        <input type="file" id="image-file" class="form-control" accept="image/*">
+                        <div class="help-text">Untuk testing NPCR dan entropy (PNG, JPG, dll)</div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="analyze-btn">
+                        🔍 Analisis S-Box
+                    </button>
+                </form>
+            </div>
+
+            <div id="loading-section" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Menganalisis S-box... silakan tunggu</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="results-section">
+            <!-- Metrics -->
+            <div class="card-glass">
+                <h3>📈 Metrik Kriptografi</h3>
+                <div id="metrics-container" class="metrics-grid"></div>
+            </div>
+
+            <!-- S-Box Table -->
+            <div class="card-glass">
+                <h3>📋 Tabel S-Box (16×16)</h3>
+                <div id="sbox-table-container" class="sbox-table"></div>
+            </div>
+
+            <!-- Image Analysis -->
+            <div id="image-analysis-section" class="card-glass" style="display: none;">
+                <h3>🖼️ Analisis Gambar</h3>
+                <div id="image-metrics-container" class="metrics-grid"></div>
+                
+                <div class="section-title">Histogram Grayscale</div>
+                <div class="histogram-row">
+                    <div class="histogram-wrapper">
+                        <div class="histogram-title">📊 Plaintext (Grayscale)</div>
+                        <canvas id="histogram-plain" class="histogram-canvas" width="400" height="250"></canvas>
+                    </div>
+                    <div class="histogram-wrapper">
+                        <div class="histogram-title">📊 Ciphertext (Grayscale)</div>
+                        <canvas id="histogram-cipher" class="histogram-canvas" width="400" height="250"></canvas>
+                    </div>
+                </div>
+
+                <div class="section-title">Histogram RGB</div>
+                <div class="histogram-row">
+                    <div class="histogram-wrapper">
+                        <div class="histogram-title">🌈 Plaintext (RGB)</div>
+                        <canvas id="histogram-rgb-plain" class="histogram-canvas" width="400" height="250"></canvas>
+                    </div>
+                    <div class="histogram-wrapper">
+                        <div class="histogram-title">🌈 Ciphertext (RGB)</div>
+                        <canvas id="histogram-rgb-cipher" class="histogram-canvas" width="400" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back Button -->
+            <div style="text-align: center; margin-top: 2rem;">
+                <button class="btn-primary" style="max-width: 300px;" onclick="location.reload()">
+                    🔄 Analisis File Baru
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const sboxFile = document.getElementById('sbox-file');
+        const imageFile = document.getElementById('image-file');
+        const uploadForm = document.getElementById('upload-form');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const loadingSection = document.getElementById('loading-section');
+        const uploadFormSection = document.getElementById('upload-form-section');
+        const resultsSection = document.getElementById('results-section');
+        const alertContainer = document.getElementById('alert-container');
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!sboxFile.files.length) {
+                showAlert('Pilih file S-box terlebih dahulu', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('sbox', sboxFile.files[0]);
+            if (imageFile.files.length) {
+                formData.append('sample_img', imageFile.files[0]);
+            }
+
+            uploadFormSection.style.display = 'none';
+            loadingSection.style.display = 'block';
+            alertContainer.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', response.headers.get('content-type'));
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Response not OK:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
+                }
+
+                const data = await response.json();
+                console.log('✅ API Response:', data);
+
+                // Always display results, even if S-box invalid
+                displayResults(data);
+                resultsSection.classList.add('active');
+                loadingSection.style.display = 'none';
+                
+                if (!data.valid) {
+                    showAlert('⚠️ ' + (data.message || data.error) + ' | Analisis gambar tetap dilakukan jika ada', 'error');
+                } else {
+                    showAlert('✓ S-box valid dan berhasil dianalisis!', 'success');
+                }
+
+            } catch (err) {
+                console.error('❌ Full error:', err);
+                showAlert('Error: ' + err.message, 'error');
+                uploadFormSection.style.display = 'block';
+                loadingSection.style.display = 'none';
+            }
+        });
+
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertContainer.appendChild(alertDiv);
+            
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        function displayResults(data) {
+            console.log('📊 displayResults called with:', data);
+            
+            if (!data) {
+                showAlert('Error: Tidak ada data dari server', 'error');
+                return;
+            }
+
+            // Display Metrics
+            const metricsHtml = `
+                <div class="metric-card">
+                    <div class="metric-label">Bijective</div>
+                    <div class="metric-value">${data.bijective ? '✓' : '✗'}</div>
+                    <div class="metric-status ${data.bijective ? 'status-true' : 'status-false'}">
+                        ${data.bijective ? 'Valid' : 'Invalid'}
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Balanced</div>
+                    <div class="metric-value">${data.balanced ? '✓' : '✗'}</div>
+                    <div class="metric-status ${data.balanced ? 'status-true' : 'status-false'}">
+                        ${data.balanced ? 'True' : 'False'}
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">SAC</div>
+                    <div class="metric-value">${data.sac ? '✓' : '✗'}</div>
+                    <div class="metric-status ${data.sac ? 'status-true' : 'status-false'}">
+                        ${data.sac ? 'True' : 'False'}
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Nonlinearity</div>
+                    <div class="metric-value">${data.nonlinearity || '-'}</div>
+                    <div class="metric-status" style="color: var(--muted);">
+                        Max: 112
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Diff. Uniformity</div>
+                    <div class="metric-value">${data.differential_uniformity || '-'}</div>
+                    <div class="metric-status" style="color: var(--muted);">
+                        Lower is Better
+                    </div>
+                </div>
+            `;
+            document.getElementById('metrics-container').innerHTML = metricsHtml;
+
+            // Display S-Box Table
+            if (data.sbox && Array.isArray(data.sbox)) {
+                const sboxTable = document.getElementById('sbox-table-container');
+                sboxTable.innerHTML = '';
+                console.log('🔲 Drawing S-box table with', data.sbox.length, 'cells');
+                data.sbox.forEach((value, index) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'sbox-cell';
+                    cell.textContent = value.toString(16).toUpperCase().padStart(2, '0');
+                    sboxTable.appendChild(cell);
+                });
+            } else {
+                console.warn('⚠️ S-box data invalid:', data.sbox);
+            }
+
+            // Display Image Analysis if available
+            if (data.image_analysis) {
+                const imgAnalysis = data.image_analysis;
+                const imageAnalysisSection = document.getElementById('image-analysis-section');
+                imageAnalysisSection.style.display = 'block';
+
+                const imgMetricsHtml = `
+                    <div class="metric-card">
+                        <div class="metric-label">Entropy (Plain)</div>
+                        <div class="metric-value">${imgAnalysis.entropy.toFixed(4)}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">NPCR (%)</div>
+                        <div class="metric-value">${imgAnalysis.npcr.toFixed(2)}%</div>
+                    </div>
+                `;
+                document.getElementById('image-metrics-container').innerHTML = imgMetricsHtml;
+
+                // Display images side-by-side
+                const imgComparisonHtml = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                        <div style="text-align: center;">
+                            <h4 style="color: var(--accent1); margin-bottom: 10px;">📸 Plaintext Image</h4>
+                            <img src="/uploads/${imgAnalysis.image_name}" alt="Plaintext" style="max-width: 100%; height: auto; border: 2px solid var(--accent1); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                        </div>
+                        <div style="text-align: center;">
+                            <h4 style="color: var(--accent2); margin-bottom: 10px;">🔒 Encrypted Image</h4>
+                            <img src="/encrypted/${imgAnalysis.cipher_name}" alt="Encrypted" style="max-width: 100%; height: auto; border: 2px solid var(--accent2); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                        </div>
+                    </div>
+                `;
+                document.getElementById('image-metrics-container').innerHTML += imgComparisonHtml;
+
+                // Draw histograms
+                if (imgAnalysis.hist_plain && Array.isArray(imgAnalysis.hist_plain)) {
+                    console.log('📊 Drawing grayscale histograms');
+                    drawHistogram('histogram-plain', imgAnalysis.hist_plain, 'grayscale');
+                    drawHistogram('histogram-cipher', imgAnalysis.hist_cipher, 'grayscale');
+                } else {
+                    console.warn('⚠️ Grayscale histogram data invalid');
+                }
+                
+                if (imgAnalysis.hist_rgb_plain && typeof imgAnalysis.hist_rgb_plain === 'object') {
+                    console.log('🌈 Drawing RGB histograms');
+                    drawHistogram('histogram-rgb-plain', imgAnalysis.hist_rgb_plain, 'rgb');
+                    drawHistogram('histogram-rgb-cipher', imgAnalysis.hist_rgb_cipher, 'rgb');
+                } else {
+                    console.warn('⚠️ RGB histogram data invalid');
+                }
+            } else {
+                console.log('ℹ️ No image analysis data');
+            }
+        }
+
+        function drawHistogram(canvasId, data, type = 'grayscale') {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) {
+                console.warn(`❌ Canvas ${canvasId} not found`);
+                return;
+            }
+            
+            if (!data) {
+                console.warn(`❌ No data for histogram ${canvasId}`);
+                return;
+            }
+
+            console.log(`📐 Drawing ${type} histogram on ${canvasId}`, data);
+
+            const ctx = canvas.getContext('2d');
+            const width = 400;
+            const height = 250;
+            const padding = 40;
+
+            // Clear
+            ctx.fillStyle = '#0f0a1f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Border
+            ctx.strokeStyle = 'rgba(139, 92, 246, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(padding, padding, width - padding * 2, height - padding * 2);
+
+            const plotWidth = width - padding * 2;
+            const plotHeight = height - padding * 2;
+
+            try {
+                if (type === 'grayscale') {
+                    drawGrayscaleHistogram(ctx, data, width, height, padding, plotWidth, plotHeight);
+                } else if (type === 'rgb') {
+                    drawRGBHistogram(ctx, data, width, height, padding, plotWidth, plotHeight);
+                }
+            } catch (e) {
+                console.error(`❌ Error drawing histogram: ${e.message}`);
+                return;
+            }
+
+            // Axes labels
+            ctx.fillStyle = '#a78bfa';
+            ctx.font = '12px Segoe UI';
+            ctx.textAlign = 'center';
+            
+            const xLabels = [0, 64, 128, 192, 255];
+            xLabels.forEach(val => {
+                const x = padding + (val / 255) * plotWidth;
+                ctx.fillText(val.toString(), x, height - 10);
+            });
+
+            ctx.save();
+            ctx.translate(10, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('Freq', 0, 0);
+            ctx.restore();
+        }
+        function drawGrayscaleHistogram(ctx, data, width, height, padding, plotWidth, plotHeight) {
+            if (!Array.isArray(data) || data.length === 0) {
+                console.warn('Invalid grayscale data:', data);
+                return;
+            }
+            
+            const maxValue = Math.max(...data);
+            if (maxValue === 0) {
+                console.warn('Histogram has no data (max=0)');
+                return;
+            }
+            
+            const barWidth = plotWidth / data.length;
+
+            ctx.fillStyle = 'rgba(139, 92, 246, 0.7)';
+            data.forEach((value, index) => {
+                const barHeight = (value / maxValue) * plotHeight;
+                const x = padding + index * barWidth;
+                const y = padding + plotHeight - barHeight;
+                ctx.fillRect(x, y, Math.max(barWidth - 1, 1), barHeight);
+            });
+            console.log('✅ Grayscale histogram drawn');
+        }
+
+        function drawRGBHistogram(ctx, data, width, height, padding, plotWidth, plotHeight) {
+            if (!data || typeof data !== 'object') {
+                console.warn('Invalid RGB data:', data);
+                return;
+            }
+            
+            const rData = data.r || [];
+            const gData = data.g || [];
+            const bData = data.b || [];
+            
+            if (rData.length === 0 || gData.length === 0 || bData.length === 0) {
+                console.warn('Missing RGB channel data:', {r: rData.length, g: gData.length, b: bData.length});
+                return;
+            }
+            
+            const maxValue = Math.max(
+                Math.max(...rData),
+                Math.max(...gData),
+                Math.max(...bData)
+            );
+            
+            if (maxValue === 0) {
+                console.warn('RGB histogram has no data (max=0)');
+                return;
+            }
+            
+            const barWidth = plotWidth / 256;
+
+            const colors = [
+                { color: 'rgba(255, 0, 0, 0.5)', data: rData },
+                { color: 'rgba(0, 255, 0, 0.5)', data: gData },
+                { color: 'rgba(0, 0, 255, 0.5)', data: bData }
+            ];
+
+            colors.forEach((channel, channelIdx) => {
+                ctx.fillStyle = channel.color;
+                channel.data.forEach((value, index) => {
+                    if (maxValue > 0) {
+                        const barHeight = (value / maxValue) * plotHeight;
+                        const x = padding + index * barWidth + (barWidth / 3) * channelIdx;
+                        const y = padding + plotHeight - barHeight;
+                        ctx.fillRect(x, y, Math.max(barWidth / 3 - 1, 1), barHeight);
+                    }
+                });
+            });
+            console.log('✅ RGB histogram drawn');
+        }
+    </script>
+</body>
+</html>

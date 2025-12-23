@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Matrix Explorer - S-Box Analyzer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #1a0033 0%, #2d1047 50%, #1a0033 100%);
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      padding: 32px;
+    }
+    .card { background: rgba(45, 16, 71, 0.6); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 16px; box-shadow: 0 8px 32px rgba(124, 58, 237, 0.1); }
+    .section-title { font-weight: 700; color: #a78bfa; margin-bottom: 12px; }
+    .pill { display: inline-block; padding: 8px 16px; border-radius: 999px; background: linear-gradient(135deg, #7c3aed, #a78bfa); color: white; font-weight: 600; font-size: 0.875rem; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4); }
+    .hero { background: linear-gradient(135deg, rgba(124, 58, 237, 0.3) 0%, rgba(167, 139, 250, 0.1) 100%); border-radius: 20px; padding: 24px 32px; border: 1px solid rgba(167, 139, 250, 0.4); }
+    .metric-badge { padding: 6px 12px; border-radius: 10px; font-size: 0.875rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-success { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-warning { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-danger { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .form-control, .form-select { background: rgba(20, 10, 40, 0.8); border: 1px solid rgba(167, 139, 250, 0.2); color: #e0e0e0; }
+    .form-label, .text-muted { color: #d9d4ff !important; }
+    .btn-primary { background: linear-gradient(135deg, #7c3aed, #a78bfa); border: none; }
+    .btn-outline-light { border-color: rgba(167, 139, 250, 0.5); color: #e0e0e0; }
+    .btn-outline-light:hover { background: rgba(167, 139, 250, 0.2); color: #fff; }
+    .btn-check:checked + .btn-outline-light { background: linear-gradient(135deg, #7c3aed, #a78bfa); color: white; border-color: #a78bfa; }
+    .list-group-item { background: rgba(20, 10, 40, 0.6); border-color: rgba(167, 139, 250, 0.2); color: #e0e0e0; }
+    .list-group-item:hover { background: rgba(124, 58, 237, 0.2); }
+    .list-group-item.active { background: linear-gradient(135deg, #7c3aed, #a78bfa); border-color: #a78bfa; color: white; }
+    .list-group-item .fw-bold { color: #f3ecff; }
+    .list-group-item.active .fw-bold { color: white; }
+    .list-group-item .text-muted { color: #cbd5e1 !important; }
+    .list-group-item.active .text-muted { color: rgba(255,255,255,0.8) !important; }
+    .table { border-collapse: separate; border-spacing: 0 8px; }
+    .table tbody tr { background: rgba(20, 10, 40, 0.6); box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1); }
+    .table tbody tr:hover { box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2); transform: translateY(-1px); transition: all 0.2s; }
+    .table tbody td { border: none; padding: 16px; vertical-align: middle; color: #e0e0e0; }
+    .table tbody td:first-child { border-radius: 12px 0 0 12px; }
+    .table tbody td:last-child { border-radius: 0 12px 12px 0; }
+    .table thead th { border: none; padding: 12px 16px; font-size: 0.875rem; font-weight: 600; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.05em; }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 1400px;">
+    <!-- Header -->
+    <div class="hero mb-4 d-flex align-items-center justify-content-between flex-wrap">
+      <div>
+        <h1 class="h3 mb-1">🔬 Research Parameters</h1>
+        <div class="text-muted">Adjust S-box generation parameters</div>
+      </div>
+      <a href="/analyzer" class="pill text-decoration-none">← Back to Analyzer</a>
+    </div>
+
+    <!-- Main Parameters Card -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div class="section-title mb-0">Affine Transformation Matrix</div>
+          <button type="button" class="btn btn-sm btn-outline-light" id="btn-reset">Reset</button>
+        </div>
+
+        <div class="row g-4">
+          <!-- Left Column: Matrix Selection -->
+          <div class="col-lg-7">
+            <!-- Matrix Type Tabs -->
+            <div class="btn-group w-100 mb-3" role="group">
+              <input type="radio" class="btn-check" name="matrix-type" id="tab-paper" autocomplete="off" checked>
+              <label class="btn btn-outline-light" for="tab-paper">Paper</label>
+              
+              <input type="radio" class="btn-check" name="matrix-type" id="tab-standard" autocomplete="off">
+              <label class="btn btn-outline-light" for="tab-standard">Standard</label>
+              
+              <input type="radio" class="btn-check" name="matrix-type" id="tab-variations" autocomplete="off">
+              <label class="btn btn-outline-light" for="tab-variations">Variations</label>
+              
+              <input type="radio" class="btn-check" name="matrix-type" id="tab-custom" autocomplete="off">
+              <label class="btn btn-outline-light" for="tab-custom">Custom</label>
+            </div>
+
+            <!-- Matrix Presets -->
+            <div id="preset-paper" class="preset-group">
+              <div class="list-group mb-3">
+                <button type="button" class="list-group-item list-group-item-action preset-item active" data-matrix="k44">
+                  <div class="fw-bold">K44 Matrix (Best Performer)</div>
+                  <small class="text-muted">NL=112, SAC=0.50073, BIC-NL=112</small>
+                </button>
+                <button type="button" class="list-group-item list-group-item-action preset-item" data-matrix="k43">
+                  <div class="fw-bold">K43 Matrix</div>
+                  <small class="text-muted">Alternative from paper exploration</small>
+                </button>
+                <button type="button" class="list-group-item list-group-item-action preset-item" data-matrix="k45">
+                  <div class="fw-bold">K45 Matrix</div>
+                  <small class="text-muted">Alternative from paper exploration</small>
+                </button>
+              </div>
+            </div>
+
+            <div id="preset-standard" class="preset-group" style="display:none;">
+              <div class="list-group mb-3">
+                <button type="button" class="list-group-item list-group-item-action preset-item" data-matrix="aes">
+                  <div class="fw-bold">AES Matrix (Rijndael)</div>
+                  <small class="text-muted">Standard AES S-box matrix</small>
+                </button>
+              </div>
+            </div>
+
+            <div id="preset-variations" class="preset-group" style="display:none;">
+              <div class="list-group mb-3">
+                <button type="button" class="list-group-item list-group-item-action preset-item" data-matrix="identity">
+                  <div class="fw-bold">Identity Matrix</div>
+                  <small class="text-muted">For testing and comparison</small>
+                </button>
+                <button type="button" class="list-group-item list-group-item-action preset-item" data-matrix="k44-rotated">
+                  <div class="fw-bold">K44 Rotated</div>
+                  <small class="text-muted">Rotated version of K44 for comparison</small>
+                </button>
+              </div>
+            </div>
+
+            <div id="preset-custom" class="preset-group" style="display:none;">
+              <p class="text-muted mb-2">Enter 8 rows as binary or hex:</p>
+              <div id="custom-matrix-inputs">
+                <div class="row g-2 mb-2">
+                  <div class="col-2"><label class="form-label small" style="color: #d9d4ff;">R0:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="0" placeholder="01010111" /></div>
+                  <div class="col-3"><span class="hex-preview small" style="color: #a78bfa; font-weight: 600;">0x57</span></div>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-2"><label class="form-label small" style="color: #d9d4ff;">R1:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="1" placeholder="10101011" /></div>
+                  <div class="col-3"><span class="hex-preview small" style="color: #a78bfa; font-weight: 600;">0xAB</span></div>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-2"><label class="form-label small" style="color: #d9d4ff;">R2:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="2" placeholder="11010101" /></div>
+                  <div class="col-3"><span class="hex-preview small" style="color: #a78bfa; font-weight: 600;">0xD5</span></div>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-2"><label class="form-label small" style="color: #d9d4ff;">R3:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="3" placeholder="11101010" /></div>
+                  <div class="col-3"><span class="hex-preview small" style="color: #a78bfa; font-weight: 600;">0xEA</span></div>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-2"><label class="form-label small" style="color: #d9d4ff;">R4:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="4" placeholder="01110101" /></div>
+                  <div class="col-3"><span class="hex-preview small" style="color: #a78bfa; font-weight: 600;">0x75</span></div>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-2"><label class="form-label small" style="color: #d9d4ff;">R5:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="5" placeholder="10111010" /></div>
+                  <div class="col-3"><span class="hex-preview small" style="color: #a78bfa; font-weight: 600;">0xBA</span></div>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-2"><label class="form-label small" style="color: #d9d4ff;">R6:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="6" placeholder="01011101" /></div>
+                  <div class="col-3"><span class="hex-preview small" style="color: #a78bfa; font-weight: 600;">0x5D</span></div>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-2"><label class="form-label small" style="color: #d9d4ff;">R7:</label></div>
+                  <div class="col-7"><input type="text" class="form-control form-control-sm matrix-input" data-row="7" placeholder="10101110" /></div>
+                  <div class="col-3"><span class="hex-preview small" style="color: #a78bfa; font-weight: 600;">0xAE</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Current Matrix Display -->
+            <div class="card mt-3" style="background: rgba(20,10,40,0.8); border-color: rgba(167,139,250,0.3);">
+              <div class="card-body">
+                <h6 class="mb-2 text-light">Current Matrix:</h6>
+                <div id="matrix-display" class="font-monospace small" style="line-height: 1.6; color: #e0e0e0;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Constant Vector -->
+          <div class="col-lg-5">
+            <h6 class="mb-3" style="color: #f3ecff;">Constant Vector (C)</h6>
+            <input type="text" class="form-control form-control-lg mb-2" id="constant-input" placeholder="63" />
+            <div class="small mb-3" style="color: #d9d4ff;">Hex/decimal. Current: <span id="constant-current" style="color: #a78bfa; font-weight: 600;">0x63 (99)</span></div>
+            
+            <div class="mb-3">
+              <div class="fw-bold small mb-2">Quick Presets:</div>
+              <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline-light constant-preset" data-value="99">0x63</button>
+                <button class="btn btn-sm btn-outline-light constant-preset" data-value="0">0x0</button>
+                <button class="btn btn-sm btn-outline-light constant-preset" data-value="255">0xFF</button>
+                <button class="btn btn-sm btn-outline-light constant-preset" data-value="170">0xAA</button>
+                <button class="btn btn-sm btn-outline-light constant-preset" data-value="85">0x55</button>
+              </div>
+            </div>
+
+            <!-- Active Parameters -->
+            <div class="card mt-4" style="background: rgba(124,58,237,0.1); border-color: rgba(167,139,250,0.3);">
+              <div class="card-body">
+                <h6 class="mb-2 text-light">Active Parameters:</h6>
+                <div id="active-params" class="font-monospace small text-light" style="line-height: 1.8;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parameter Presets -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="section-title mb-3">Parameter Presets</h5>
+        <div class="row g-3">
+          <div class="col-md-8">
+            <input type="text" class="form-control" id="preset-name" placeholder="Preset name..." />
+          </div>
+          <div class="col-md-4">
+            <button type="button" class="btn btn-primary w-100" id="btn-save-preset">Save</button>
+          </div>
+        </div>
+        <div id="saved-presets" class="mt-3"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Matrix presets
+    const matrices = {
+      k44: [[0,1,0,1,0,1,1,1],[1,0,1,0,1,0,1,1],[1,1,0,1,0,1,0,1],[1,1,1,0,1,0,1,0],[0,1,1,1,0,1,0,1],[1,0,1,1,1,0,1,0],[0,1,0,1,1,1,0,1],[1,0,1,0,1,1,1,0]],
+      k43: [[0,1,0,1,0,0,1,1],[1,0,1,0,1,0,0,1],[1,1,0,1,0,1,0,0],[0,1,1,0,1,0,1,1],[0,0,1,1,0,1,1,1],[1,1,0,0,1,1,1,0],[0,1,1,1,0,1,1,1],[1,0,0,1,1,1,1,0]],
+      k45: [[0,1,1,1,0,1,0,1],[1,0,1,1,0,1,0,1],[0,1,0,1,0,1,0,1],[1,1,0,0,0,1,0,1],[0,0,0,0,1,1,1,1],[0,0,0,1,1,1,1,1],[0,0,1,0,1,1,1,0],[0,1,0,1,1,1,0,0]],
+      aes: [[1,1,1,1,1,0,0,0],[0,1,1,1,1,1,0,0],[0,0,1,1,1,1,1,0],[0,0,0,1,1,1,1,1],[1,0,0,0,1,1,1,1],[1,1,0,0,0,1,1,1],[1,1,1,0,0,0,1,1],[1,1,1,1,0,0,0,1]],
+      identity: [[1,0,0,0,0,0,0,0],[0,1,0,0,0,0,0,0],[0,0,1,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,1,0,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,1]],
+      'k44-rotated': [[0,1,1,1,0,1,0,1],[0,1,0,1,0,1,1,1],[1,0,1,0,1,0,1,1],[1,1,0,1,0,1,0,1],[1,1,1,0,1,0,1,0],[0,1,1,1,0,1,0,1],[1,0,1,1,1,0,1,0],[0,1,0,1,1,1,0,1]]
+    };
+
+    let currentMatrix = matrices.k44;
+    let currentConstant = 99; // 0x63
+
+    // Tab switching
+    document.querySelectorAll('[name="matrix-type"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        const type = e.target.id.replace('tab-', '');
+        document.querySelectorAll('.preset-group').forEach(g => g.style.display = 'none');
+        document.getElementById(`preset-${type}`).style.display = 'block';
+      });
+    });
+
+    // Preset selection
+    document.querySelectorAll('.preset-item').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.preset-item').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const matrixKey = this.dataset.matrix;
+        currentMatrix = matrices[matrixKey];
+        updateMatrixDisplay();
+        updateActiveParams();
+      });
+    });
+
+    // Constant presets
+    document.querySelectorAll('.constant-preset').forEach(btn => {
+      btn.addEventListener('click', function() {
+        currentConstant = parseInt(this.dataset.value);
+        document.getElementById('constant-input').value = currentConstant;
+        updateConstantDisplay();
+        updateActiveParams();
+      });
+    });
+
+    document.getElementById('constant-input').addEventListener('input', function() {
+      let val = this.value.trim();
+      if (val.startsWith('0x')) {
+        currentConstant = parseInt(val, 16);
+      } else {
+        currentConstant = parseInt(val) || 99;
+      }
+      updateConstantDisplay();
+      updateActiveParams();
+    });
+
+    // Custom matrix inputs
+    document.querySelectorAll('.matrix-input').forEach(input => {
+      input.addEventListener('input', function() {
+        const row = parseInt(this.dataset.row);
+        const val = this.value.trim();
+        const preview = this.closest('.row').querySelector('.hex-preview');
+        
+        let binary;
+        if (/^[01]{8}$/.test(val)) {
+          binary = val;
+        } else if (/^0x[0-9a-fA-F]{1,2}$/.test(val)) {
+          binary = parseInt(val, 16).toString(2).padStart(8, '0');
+        } else {
+          preview.textContent = 'Invalid';
+          return;
+        }
+        
+        currentMatrix[row] = binary.split('').map(b => parseInt(b));
+        preview.textContent = `0x${parseInt(binary, 2).toString(16).toUpperCase().padStart(2, '0')}`;
+        updateMatrixDisplay();
+        updateActiveParams();
+      });
+    });
+
+    function updateMatrixDisplay() {
+      const display = document.getElementById('matrix-display');
+      let html = '';
+      currentMatrix.forEach((row, idx) => {
+        const binary = row.join('');
+        const hex = parseInt(binary, 2).toString(16).toUpperCase().padStart(2, '0');
+        html += `R${idx}:&nbsp;&nbsp;&nbsp;&nbsp;${binary}&nbsp;&nbsp;(0x${hex})<br>`;
+      });
+      display.innerHTML = html;
+    }
+
+    function updateConstantDisplay() {
+      const hex = currentConstant.toString(16).toUpperCase().padStart(2, '0');
+      document.getElementById('constant-current').textContent = `0x${hex} (${currentConstant})`;
+    }
+
+    function updateActiveParams() {
+      const hex = currentConstant.toString(16).toUpperCase().padStart(2, '0');
+      const activePreset = document.querySelector('.preset-item.active')?.querySelector('.fw-bold')?.textContent || 'Custom';
+      
+      document.getElementById('active-params').innerHTML = `
+        Matrix: <strong>${activePreset}</strong> &nbsp; C: <strong>0x${hex}</strong><br>
+        S(x) = M × x^(-1) ⊕ 0x${hex}
+      `;
+    }
+
+    // Reset
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      currentMatrix = matrices.k44;
+      currentConstant = 99;
+      document.getElementById('tab-paper').checked = true;
+      document.querySelectorAll('.preset-group').forEach(g => g.style.display = 'none');
+      document.getElementById('preset-paper').style.display = 'block';
+      document.querySelectorAll('.preset-item').forEach(b => b.classList.remove('active'));
+      document.querySelector('[data-matrix="k44"]').classList.add('active');
+      document.getElementById('constant-input').value = 99;
+      updateMatrixDisplay();
+      updateConstantDisplay();
+      updateActiveParams();
+    });
+
+    // Parameter presets (save/load)
+    let savedPresets = JSON.parse(localStorage.getItem('matrixPresets') || '[]');
+    
+    function renderPresets() {
+      const container = document.getElementById('saved-presets');
+      if (savedPresets.length === 0) {
+        container.innerHTML = '<p class="text-muted small">No saved presets yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = savedPresets.map((p, idx) => `
+        <div class="d-flex justify-content-between align-items-center p-2 mb-2 rounded" style="background: rgba(124,58,237,0.1);">
+          <div>
+            <strong>${p.name}</strong>
+            <br><small class="text-muted">Matrix: ${p.matrixType} | C=0x${p.constant.toString(16).toUpperCase()}</small>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-primary me-2" onclick="loadPreset(${idx})">Load</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deletePreset(${idx})">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('btn-save-preset').addEventListener('click', () => {
+      const name = document.getElementById('preset-name').value.trim();
+      if (!name) {
+        alert('Please enter a preset name');
+        return;
+      }
+      
+      const activePreset = document.querySelector('.preset-item.active')?.dataset.matrix || 'custom';
+      
+      savedPresets.push({
+        name,
+        matrix: currentMatrix,
+        matrixType: activePreset,
+        constant: currentConstant
+      });
+      
+      localStorage.setItem('matrixPresets', JSON.stringify(savedPresets));
+      document.getElementById('preset-name').value = '';
+      renderPresets();
+    });
+
+    window.loadPreset = (idx) => {
+      const preset = savedPresets[idx];
+      currentMatrix = preset.matrix;
+      currentConstant = preset.constant;
+      document.getElementById('constant-input').value = currentConstant;
+      updateMatrixDisplay();
+      updateConstantDisplay();
+      updateActiveParams();
+    };
+
+    window.deletePreset = (idx) => {
+      if (confirm('Delete this preset?')) {
+        savedPresets.splice(idx, 1);
+        localStorage.setItem('matrixPresets', JSON.stringify(savedPresets));
+        renderPresets();
+      }
+    };
+
+    // Initialize
+    updateMatrixDisplay();
+    updateConstantDisplay();
+    updateActiveParams();
+    renderPresets();
+  </script>
+</body>
+</html>

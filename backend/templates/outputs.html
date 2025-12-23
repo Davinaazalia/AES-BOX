@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Output Files - S-Box Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg1: #0f0a1f;
+            --bg2: #1a0f2e;
+            --accent: #8c5bff;
+            --accent2: #bfa5ff;
+            --text: #f3ecff;
+            --muted: #d6d0ff;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--bg1), var(--bg2));
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container-main {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .navbar-custom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(140, 91, 255, 0.1);
+            border: 1px solid rgba(140, 91, 255, 0.3);
+            border-radius: 12px;
+        }
+        
+        .navbar-custom a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .navbar-custom a:hover {
+            color: var(--accent2);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent2), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .card-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(140, 91, 255, 0.3);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-glass h3 {
+            color: var(--accent2);
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .file-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(140, 91, 255, 0.1);
+            border: 1px solid rgba(140, 91, 255, 0.2);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .file-item:hover {
+            background: rgba(140, 91, 255, 0.15);
+            border-color: rgba(140, 91, 255, 0.4);
+        }
+        
+        .file-name {
+            color: var(--text);
+            font-weight: 500;
+            word-break: break-all;
+            flex: 1;
+        }
+        
+        .file-link {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #0d021f;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-left: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .file-link:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted);
+        }
+        
+        .btn-nav {
+            background: rgba(140, 91, 255, 0.2);
+            border: 1px solid rgba(140, 91, 255, 0.5);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-nav:hover {
+            background: rgba(140, 91, 255, 0.3);
+            color: var(--accent2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-main">
+        <!-- Navbar -->
+        <div class="navbar-custom">
+            <a href="/">🔐 S-Box Analyzer</a>
+            <div>
+                <a href="/" class="btn-nav">← Home</a>
+                <a href="/analyzer" class="btn-nav" style="margin-left: 10px;">📊 Analyzer</a>
+                <a href="/batch-analyzer" class="btn-nav" style="margin-left: 10px;">🔄 Batch</a>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <h1>📁 Output Files</h1>
+            <p>Daftar semua file yang telah di-generate dan di-encrypt</p>
+        </div>
+
+        <!-- Generated S-Boxes -->
+        {% if outputs.generated_sboxes %}
+        <div class="card-glass">
+            <h3>✨ Generated S-Boxes</h3>
+            <ul class="file-list">
+                {% for file in outputs.generated_sboxes %}
+                <li class="file-item">
+                    <span class="file-name">{{ file }}</span>
+                    <a href="/generated/{{ file }}" class="file-link" download>📥 Download</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <div class="card-glass">
+            <h3>✨ Generated S-Boxes</h3>
+            <div class="empty">Belum ada S-box yang di-generate</div>
+        </div>
+        {% endif %}
+
+        <!-- Encrypted Images -->
+        {% if outputs.encrypted_images %}
+        <div class="card-glass">
+            <h3>🖼️ Encrypted Images</h3>
+            <ul class="file-list">
+                {% for file in outputs.encrypted_images %}
+                <li class="file-item">
+                    <span class="file-name">{{ file }}</span>
+                    <a href="/encrypted/{{ file }}" class="file-link" download>📥 Download</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <div class="card-glass">
+            <h3>🖼️ Encrypted Images</h3>
+            <div class="empty">Belum ada gambar yang di-encrypt</div>
+        </div>
+        {% endif %}
+
+        <!-- AES Cipher Files -->
+        {% if outputs.aes_cipher %}
+        <div class="card-glass">
+            <h3>🔒 AES Cipher Files</h3>
+            <ul class="file-list">
+                {% for file in outputs.aes_cipher %}
+                <li class="file-item">
+                    <span class="file-name">{{ file }}</span>
+                    <a href="/aes-cipher/{{ file }}" class="file-link" download>📥 Download</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <div class="card-glass">
+            <h3>🔒 AES Cipher Files</h3>
+            <div class="empty">Belum ada file yang di-encrypt</div>
+        </div>
+        {% endif %}
+
+        <!-- AES Plain Files -->
+        {% if outputs.aes_plain %}
+        <div class="card-glass">
+            <h3>📄 AES Plain Files</h3>
+            <ul class="file-list">
+                {% for file in outputs.aes_plain %}
+                <li class="file-item">
+                    <span class="file-name">{{ file }}</span>
+                    <a href="/aes-plain/{{ file }}" class="file-link" download>📥 Download</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <div class="card-glass">
+            <h3>📄 AES Plain Files</h3>
+            <div class="empty">Belum ada plaintext file</div>
+        </div>
+        {% endif %}
+
+        <!-- AES Visual Files -->
+        {% if outputs.aes_visual %}
+        <div class="card-glass">
+            <h3>📊 AES Visual Analysis</h3>
+            <ul class="file-list">
+                {% for file in outputs.aes_visual %}
+                <li class="file-item">
+                    <span class="file-name">{{ file }}</span>
+                    <a href="/aes-visual/{{ file }}" class="file-link" download>📥 Download</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <div class="card-glass">
+            <h3>📊 AES Visual Analysis</h3>
+            <div class="empty">Belum ada visualisasi</div>
+        </div>
+        {% endif %}
+
+        <!-- Refresh Button -->
+        <div style="text-align: center; margin-top: 2rem; margin-bottom: 2rem;">
+            <button class="btn" onclick="location.reload()" style="background: linear-gradient(135deg, #8c5bff, #bfa5ff); color: #0d021f; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                🔄 Refresh
+            </button>
+        </div>
+    </div>
+</body>
+</html>

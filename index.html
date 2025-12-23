@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S-Box Analyzer - Advanced Cryptographic Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar-custom">
+        <div class="navbar-inner">
+            <div class="nav-brand">
+                <i class="bi bi-shield-lock-fill"></i>
+                S-Box Analyzer
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link-btn home"><i class="bi bi-house-fill"></i> Home</a>
+                <a href="/aes" class="nav-link-btn aes"><i class="bi bi-lock-fill"></i> AES Tools</a>
+                <a href="/batch-analyzer" class="nav-link-btn batch"><i class="bi bi-grid-3x3-gap-fill"></i> Batch Analyzer</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Hero -->
+        <div class="hero-section">
+            <h1 class="hero-title">
+                <i class="bi bi-cpu-fill" style="color: var(--purple-500);"></i>
+                S-Box Analyzer
+            </h1>
+            <p class="hero-subtitle">Advanced cryptographic S-Box generation and analysis with comprehensive security metrics</p>
+            <div class="hero-steps">
+                <span class="step-badge active"><i class="bi bi-1-circle-fill"></i> Generate/Upload</span>
+                <span class="step-badge pending"><i class="bi bi-2-circle"></i> View S-Box</span>
+                <span class="step-badge pending"><i class="bi bi-3-circle"></i> Analyze</span>
+                <span class="step-badge pending"><i class="bi bi-4-circle"></i> Export</span>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid-2col">
+            <!-- Left: Quick Generate -->
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <span class="icon"><i class="bi bi-lightning-charge-fill"></i></span>
+                    <h5>Quick Generate</h5>
+                </div>
+                <div class="card-body-custom">
+                    <div class="section-label">Generation Mode</div>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" name="genMode" id="mode-default" value="default" checked>
+                            <label for="mode-default"><i class="bi bi-grid-3x3"></i> Default Matrix</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" name="genMode" id="mode-random" value="random">
+                            <label for="mode-random"><i class="bi bi-shuffle"></i> Random Matrix</label>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary-custom" id="generate-btn">
+                        <i class="bi bi-play-circle-fill"></i> Generate S-Box
+                    </button>
+
+                    <button class="btn-secondary-custom" id="download-excel-btn">
+                        <i class="bi bi-file-earmark-excel-fill"></i> Download Excel
+                    </button>
+
+                    <div class="divider"><span>Sample S-Boxes</span></div>
+
+                    <button class="btn-secondary-custom" data-sample="1">
+                        <i class="bi bi-file-text-fill"></i> Sample 1 - AES Standard
+                    </button>
+                    <button class="btn-secondary-custom" data-sample="2">
+                        <i class="bi bi-file-text-fill"></i> Sample 2 - K44 Matrix
+                    </button>
+                    <button class="btn-secondary-custom" data-sample="3">
+                        <i class="bi bi-file-text-fill"></i> Sample 3 - K43 Matrix
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Upload -->
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <span class="icon"><i class="bi bi-cloud-arrow-up-fill"></i></span>
+                    <h5>Upload S-Box</h5>
+                </div>
+                <div class="card-body-custom">
+                    <div class="section-label">Upload File</div>
+                    <label class="upload-area" for="sbox-upload">
+                        <i class="bi bi-cloud-upload-fill"></i>
+                        <div class="upload-title">Click to upload or drag and drop</div>
+                        <div class="upload-subtitle">Supports: TXT, CSV, JSON (256 values)</div>
+                        <input type="file" id="sbox-upload" accept=".txt,.csv,.json">
+                    </label>
+
+                    <div class="divider"><span>Or paste values</span></div>
+
+                    <div class="section-label">Paste S-Box Values</div>
+                    <textarea class="textarea-custom" id="sbox-paste" rows="5" 
+                        placeholder="Paste 256 hex values separated by commas or spaces...&#10;Example: 63, 7c, 77, 7b, f2, 6b, ..."></textarea>
+                    
+                    <button class="btn-primary-custom" id="parse-paste-btn" style="margin-top: 1rem;">
+                        <i class="bi bi-check2-circle"></i> Parse & Analyze
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="result-section" id="results-section">
+            <div class="card-custom" style="margin-bottom: 1.5rem;">
+                <div class="card-header-custom">
+                    <span class="icon"><i class="bi bi-table"></i></span>
+                    <h5>Generated S-Box (16×16)</h5>
+                </div>
+                <div class="card-body-custom">
+                    <div class="sbox-grid-container">
+                        <div class="sbox-grid" id="sbox-display"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-custom" style="margin-bottom: 1.5rem;">
+                <div class="card-header-custom">
+                    <span class="icon"><i class="bi bi-graph-up-arrow"></i></span>
+                    <h5>Cryptographic Metrics</h5>
+                </div>
+                <div class="card-body-custom">
+                    <div class="metrics-grid" id="metrics-display"></div>
+                </div>
+            </div>
+
+            <div class="grid-2col">
+                <div class="card-custom">
+                    <div class="card-header-custom">
+                        <span class="icon"><i class="bi bi-bar-chart-fill"></i></span>
+                        <h5>Distribution Analysis</h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="chart-container"><canvas id="distribution-chart"></canvas></div>
+                    </div>
+                </div>
+                <div class="card-custom">
+                    <div class="card-header-custom">
+                        <span class="icon"><i class="bi bi-diagram-3-fill"></i></span>
+                        <h5>Security Score</h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="chart-container"><canvas id="score-chart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

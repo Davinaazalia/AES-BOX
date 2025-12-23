@@ -1,0 +1,1584 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AES Tools | S-Box Analyzer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg1: #120024;
+      --bg2: #1e0d35;
+      --accent: #8c5bff;
+      --accent2: #bfa5ff;
+      --text: #f3ecff;
+      --muted: #d6d0ff;
+    }
+    body { background: linear-gradient(135deg, var(--bg1), var(--bg2)); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .hidden-section { display: none !important; }
+    .section-toggle { min-width: 150px; padding: 10px 14px; font-weight: 700; border-radius: 10px; }
+    .section-toggle:hover { filter: brightness(1.05); }
+    .nav-bg { background: rgba(20,10,40,0.9); border-bottom: 1px solid rgba(140,91,255,0.35); backdrop-filter: blur(10px); }
+    .brand { font-weight: 800; color: var(--accent2); text-decoration: none; }
+    .brand:hover { color: #ffffff; }
+    .container-narrow { max-width: 1100px; padding: 32px 16px; margin: 0 auto; }
+    .card-glass { background: rgba(255,255,255,0.04); border: 1px solid rgba(140,91,255,0.35); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+    .card-glass h5 { color: var(--accent2); }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; font-weight: 700; color: #0d021f; }
+    .btn-primary:hover { filter: brightness(1.05); color: #0d021f; }
+    .btn-outline-light { border-color: rgba(140,91,255,0.5); color: var(--text); }
+    .btn-outline-light:hover { background: rgba(140,91,255,0.15); color: #fff; }
+    .section-title { color: var(--accent2); font-weight: 700; margin-bottom: 12px; }
+    .muted { color: var(--muted); }
+    .code-box { background: rgba(15,9,30,0.8); border: 1px solid rgba(140,91,255,0.35); border-radius: 10px; padding: 12px; font-family: "Consolas", monospace; font-size: 0.9rem; white-space: pre-wrap; word-break: break-word; }
+    .cipher-viz-container { background: rgba(20,10,40,0.6); border: 1px solid rgba(140,91,255,0.3); border-radius: 8px; padding: 8px; width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .cipher-viz-img { width: 100%; height: 100%; max-width: 100%; object-fit: contain; }
+    a { color: var(--accent2); }
+  </style>
+</head>
+<body>
+  <nav class="nav-bg py-3">
+    <div class="container-narrow d-flex justify-content-between align-items-center">
+      <a class="brand" href="/">S-Box Analyzer</a>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-light btn-sm" href="/analyzer">Analyzer</a>
+        <a class="btn btn-outline-light btn-sm" href="/batch-analyzer">Batch Analyzer</a>
+        <a class="btn btn-primary btn-sm" href="/aes">AES Tools</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-narrow mt-4 mb-5">
+    <div class="mb-4">
+      <div class="section-title">🔬 Affine Transformation Matrix Configuration</div>
+      <p class="muted mb-3">Configure custom S-box generation parameters. Choose or create matrix, then generate and compare with AES.</p>
+      
+      <!-- Quick Guide -->
+      <div class="card-glass p-3 mb-4" style="background: rgba(32, 201, 151, 0.08); border-color: rgba(32, 201, 151, 0.3);">
+        <div style="font-size: 0.9rem; color: #d0fce5; margin-bottom: 12px;">
+          <strong>💡 Quick Tips for Full Cipher Visualization:</strong>
+          <ul style="margin: 8px 0 0 20px; padding: 0;">
+            <li>Use <strong>preset matrices</strong> (K44, AES, etc.) for guaranteed results</li>
+            <li>Use <strong>larger input files</strong> (>100KB) to get complete visualization</li>
+            <li>Different matrices + constants produce different cipher patterns</li>
+            <li>Compare multiple S-boxes to find best cryptographic properties</li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- Affine Transformation Matrix Section -->
+      <div class="card-glass p-4 mb-4">
+        <div class="row g-3">
+          <!-- Tabs -->
+          <div class="col-12">
+            <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+              <button class="btn btn-sm" id="tab-paper" style="background: var(--accent); color: #0d021f;" onclick="switchTab('paper')">📄 Paper Matrices</button>
+              <button class="btn btn-sm btn-outline-light" id="tab-standard" onclick="switchTab('standard')">🔒 Standard</button>
+              <button class="btn btn-sm btn-outline-light" id="tab-variations" onclick="switchTab('variations')">🔄 Variations</button>
+              <button class="btn btn-sm btn-outline-light" id="tab-custom" onclick="switchTab('custom')">✏️ Custom</button>
+            </div>
+
+            <!-- Paper Tab -->
+            <div id="paper-content" class="col-12">
+              <div style="background: rgba(140,91,255,0.1); border: 1px solid var(--accent); border-radius: 8px; padding: 16px;">
+                <p class="small muted mb-3">Best performing matrices from research papers:</p>
+                <div id="paper-presets" style="display: flex; flex-direction: column; gap: 12px;">
+                  <div class="btn-group" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-outline-light btn-sm" onclick="selectMatrixPreset('k44')">K44 (Best Performer)</button>
+                    <button class="btn btn-outline-light btn-sm" onclick="selectMatrixPreset('k43')">K43</button>
+                    <button class="btn btn-outline-light btn-sm" onclick="selectMatrixPreset('k45')">K45</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Standard Tab -->
+            <div id="standard-content" class="col-12" style="display: none;">
+              <div style="background: rgba(140,91,255,0.1); border: 1px solid var(--accent); border-radius: 8px; padding: 16px;">
+                <p class="small muted mb-3">AES standard affine transformation:</p>
+                <button class="btn btn-outline-light btn-sm w-100" onclick="selectMatrixPreset('aes')">AES Standard Matrix</button>
+              </div>
+            </div>
+
+            <!-- Variations Tab -->
+            <div id="variations-content" class="col-12" style="display: none;">
+              <div style="background: rgba(140,91,255,0.1); border: 1px solid var(--accent); border-radius: 8px; padding: 16px;">
+                <p class="small muted mb-3">Transformations and derivatives:</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <button class="btn btn-outline-light btn-sm" onclick="selectMatrixPreset('identity')">Identity Matrix</button>
+                  <button class="btn btn-outline-light btn-sm" onclick="selectMatrixPreset('k44-rotated')">K44 Rotated</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Custom Tab -->
+            <div id="custom-content" class="col-12" style="display: none;">
+              <div style="background: rgba(140,91,255,0.1); border: 1px solid var(--accent); border-radius: 8px; padding: 16px;">
+                <label class="form-label" style="color: var(--accent2);">Custom Matrix (8 rows, 8 bits each - enter as binary or hex)</label>
+                <div class="row g-2">
+                <div class="col-6"><input class="form-control form-control-sm" id="m-row-0" placeholder="R0 (binary)" /></div>
+                <div class="col-6"><input class="form-control form-control-sm" id="m-row-1" placeholder="R1 (binary)" /></div>
+                <div class="col-6"><input class="form-control form-control-sm" id="m-row-2" placeholder="R2 (binary)" /></div>
+                <div class="col-6"><input class="form-control form-control-sm" id="m-row-3" placeholder="R3 (binary)" /></div>
+                <div class="col-6"><input class="form-control form-control-sm" id="m-row-4" placeholder="R4 (binary)" /></div>
+                <div class="col-6"><input class="form-control form-control-sm" id="m-row-5" placeholder="R5 (binary)" /></div>
+                <div class="col-6"><input class="form-control form-control-sm" id="m-row-6" placeholder="R6 (binary)" /></div>
+                <div class="col-6"><input class="form-control form-control-sm" id="m-row-7" placeholder="R7 (binary)" /></div>
+              </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Matrix Display -->
+          <div class="col-12">
+            <div id="current-matrix-display" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; display: none;">
+              <div class="d-flex justify-content-between align-items-center" style="margin-bottom:8px;">
+                <h6 style="color: var(--accent2); margin: 0;">Current Matrix</h6>
+                <div>
+                  <button type="button" class="btn btn-sm btn-outline-light" id="btn-edit-current" onclick="enableMatrixEdit()">Edit</button>
+                  <button type="button" class="btn btn-sm btn-primary" id="btn-save-current" onclick="saveMatrixEdit()" style="display:none;">Save</button>
+                  <button type="button" class="btn btn-sm btn-outline-light" id="btn-cancel-current" onclick="cancelMatrixEdit()" style="display:none;">Cancel</button>
+                </div>
+              </div>
+              <div id="current-matrix-text" style="font-family: monospace; font-size: 0.85rem; color: #a78bfa; line-height: 1.6;"></div>
+            </div>
+          </div>
+
+          <!-- Constant Vector -->
+          <div class="col-md-4">
+            <label class="form-label">Constant (hex)</label>
+            <input class="form-control" id="matrix-constant" value="63" maxlength="2" />
+            <div class="form-text" style="color:#cbd5e1;font-size:0.75rem;">0x63 = AES default</div>
+            <div class="d-flex flex-wrap gap-2 mt-2" id="constant-quick">
+              <button type="button" class="btn btn-outline-light btn-sm constant-quick" data-hex="63">0x63</button>
+              <button type="button" class="btn btn-outline-light btn-sm constant-quick" data-hex="00">0x00</button>
+              <button type="button" class="btn btn-outline-light btn-sm constant-quick" data-hex="FF">0xFF</button>
+              <button type="button" class="btn btn-outline-light btn-sm constant-quick" data-hex="AA">0xAA</button>
+              <button type="button" class="btn btn-outline-light btn-sm constant-quick" data-hex="55">0x55</button>
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="col-md-8">
+            <label class="form-label">&nbsp;</label>
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary flex-fill" id="btn-generate-sbox">Generate S-box</button>
+              <button class="btn btn-outline-light" id="btn-download-sbox" onclick="downloadSboxJson()">JSON</button>
+              <button class="btn btn-outline-light" id="btn-download-excel" onclick="downloadSboxExcel()">Excel</button>
+            </div>
+          </div>
+
+          <!-- Active Parameters Display -->
+          <div class="col-12">
+            <div id="active-params-display" class="mb-4" style="background: rgba(140,91,255,0.15); border: 1px solid var(--accent); border-radius: 8px; padding: 12px; display: none;">
+              <h6 style="color: var(--accent2); margin-bottom: 8px;">Active Parameters:</h6>
+              <div id="active-params-text" style="color: var(--text); font-size: 0.9rem; line-height: 1.6;">-</div>
+            </div>
+          </div>
+
+          <!-- S-box Preview -->
+          <div class="col-12">
+            <div id="sbox-preview" style="display:none;">
+              <label class="form-label">S-box Preview (first 16 bytes)</label>
+              <div class="code-box" id="sbox-preview-text">-</div>
+            </div>
+          </div>
+
+          <!-- Cryptographic Analysis -->
+          <div class="col-12">
+            <div id="crypto-analysis" style="display:none;">
+              <h6 style="color: var(--accent2); margin: 16px 0 12px;">Cryptographic Analysis Result</h6>
+              <div class="row g-2">
+                <div class="col-md-4 col-sm-6">
+                  <div class="card-glass p-3 text-center">
+                    <div class="small muted">NL (Nonlinearity)</div>
+                    <div class="h4 mb-0" style="color: var(--accent2);" id="metric-nl">-</div>
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                  <div class="card-glass p-3 text-center">
+                    <div class="small muted">SAC</div>
+                    <div class="h4 mb-0" style="color: var(--accent2);" id="metric-sac">-</div>
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                  <div class="card-glass p-3 text-center">
+                    <div class="small muted">BIC-SAC</div>
+                    <div class="h4 mb-0" style="color: var(--accent2);" id="metric-bic-sac">-</div>
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                  <div class="card-glass p-3 text-center">
+                    <div class="small muted">LAP</div>
+                    <div class="h4 mb-0" style="color: var(--accent2);" id="metric-lap">-</div>
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                  <div class="card-glass p-3 text-center">
+                    <div class="small muted">DAP-PROB</div>
+                    <div class="h4 mb-0" style="color: var(--accent2);" id="metric-dap">-</div>
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                  <div class="card-glass p-3 text-center">
+                    <div class="small muted">DU</div>
+                    <div class="h4 mb-0" style="color: var(--accent2);" id="metric-du">-</div>
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                  <div class="card-glass p-3 text-center">
+                    <div class="small muted">BIC-NL</div>
+                    <div class="h4 mb-0" style="color: var(--accent2);" id="metric-bic-nl">-</div>
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                  <div class="card-glass p-3 text-center">
+                    <div class="small muted">ALG-DEG</div>
+                    <div class="h4 mb-0" style="color: var(--accent2);" id="metric-alg-deg">-</div>
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                  <div class="card-glass p-3 text-center">
+                    <div class="small muted">TG</div>
+                    <div class="h4 mb-0" style="color: var(--accent2);" id="metric-tg">-</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Parameter Presets -->
+          <div class="col-12">
+            <div class="mt-4">
+              <h6 class="mb-3" style="color: var(--accent2);">Parameter Presets</h6>
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <input type="text" class="form-control" id="preset-name" placeholder="Preset name..." />
+                </div>
+                <div class="col-md-4">
+                  <button class="btn btn-primary w-100" id="btn-save-preset">Save</button>
+                </div>
+              </div>
+              <div id="preset-list" class="mt-3">
+                <!-- Presets will be rendered here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New heading for AES Tools -->
+    <div class="mb-4 mt-5">
+      <div class="section-title">🔐 AES Text & Image Tools</div>
+      <p class="muted mb-1">Use keys in hex or text format (32/48/64 chars for 128/192/256-bit AES). IV is optional; auto-generated if empty.</p>
+      <div id="active-sbox-indicator" class="alert" style="background: rgba(140,91,255,0.15); border: 1px solid var(--accent); color: var(--accent2); display:none; padding: 12px; border-radius: 8px; margin-top: 12px;">
+        <strong>🎯 Active S-box:</strong> <span id="active-sbox-name">AES Standard</span> — <span id="active-sbox-desc">Default AES S-box</span>
+      </div>
+
+      <!-- Section toggles so only one area shows if desired -->
+      <div class="d-flex flex-wrap gap-2 mt-3 mb-3">
+        <button type="button" class="btn btn-primary section-toggle" data-section-btn="all" onclick="setVisibleSection('all')">Tampilkan Semua</button>
+        <button type="button" class="btn btn-outline-light section-toggle" data-section-btn="text-encrypt" onclick="setVisibleSection('text-encrypt')">Encrypt Text</button>
+        <button type="button" class="btn btn-outline-light section-toggle" data-section-btn="text-decrypt" onclick="setVisibleSection('text-decrypt')">Decrypt Text</button>
+        <button type="button" class="btn btn-outline-light section-toggle" data-section-btn="file-encrypt" onclick="setVisibleSection('file-encrypt')">Encrypt File/Image</button>
+        <button type="button" class="btn btn-outline-light section-toggle" data-section-btn="file-decrypt" onclick="setVisibleSection('file-decrypt')">Decrypt File</button>
+      </div>
+
+    <!-- Quick Image Encryption & Decryption Section -->
+    <div class="card-glass p-4 mb-4">
+            <h5 class="mb-3">🖼️ Image Encryption & Decryption</h5>
+            <p class="muted small mb-3">Encrypt and decrypt images using AES-128 with K44, AES, or custom S-box.</p>
+      
+            <div class="row g-2 mb-4">
+              <!-- K44 S-box Quick Button -->
+              <div class="col-md-4">
+                <div class="card-glass p-3 text-center" style="border: 2px solid rgba(255, 193, 7, 0.3); cursor: pointer;" onclick="quickSelectSbox('k44')">
+                  <div class="h6 mb-2" style="color: #ffc107;">K44 S-box</div>
+                  <small class="text-muted">Best Performer</small><br>
+                  <small class="text-muted" style="font-size: 0.75rem;">NL=112, SAC=0.5007</small>
+                  <div class="mt-2">
+                    <button class="btn btn-sm btn-outline-light w-100" id="btn-k44-encrypt">Encrypt Image</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- AES S-box Quick Button -->
+              <div class="col-md-4">
+                <div class="card-glass p-3 text-center" style="border: 2px solid rgba(100, 200, 255, 0.3); cursor: pointer;" onclick="quickSelectSbox('aes')">
+                  <div class="h6 mb-2" style="color: #64c8ff;">AES S-box</div>
+                  <small class="text-muted">Standard AES</small><br>
+                  <small class="text-muted" style="font-size: 0.75rem;">NL=112, SAC=0.5049</small>
+                  <div class="mt-2">
+                    <button class="btn btn-sm btn-outline-light w-100" id="btn-aes-encrypt">Encrypt Image</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Custom S-box Quick Button -->
+              <div class="col-md-4">
+                <div class="card-glass p-3 text-center" style="border: 2px solid rgba(140, 91, 255, 0.3); cursor: pointer;" onclick="quickSelectSbox('custom')">
+                  <div class="h6 mb-2" style="color: var(--accent2);">Custom S-box</div>
+                  <small class="text-muted">User Defined</small><br>
+                  <small class="text-muted" style="font-size: 0.75rem;" id="custom-metrics">Generate first</small>
+                  <div class="mt-2">
+                    <button class="btn btn-sm btn-outline-light w-100" id="btn-custom-encrypt" disabled>Encrypt Image</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Decrypt Image Button -->
+            <div class="row g-2">
+              <div class="col-12">
+                <button class="btn btn-outline-light w-100" id="btn-image-decrypt">🔓 Decrypt Image</button>
+              </div>
+            </div>
+
+            <!-- Quick access to Text Encrypt/Decrypt -->
+            <div class="row g-2 mt-3">
+              <div class="col-md-6">
+                <button class="btn btn-outline-light w-100" id="btn-show-text-encrypt">✍️ Go to Text Encryption</button>
+              </div>
+              <div class="col-md-6">
+                <button class="btn btn-outline-light w-100" id="btn-show-text-decrypt">📖 Go to Text Decryption</button>
+              </div>
+            </div>
+          </div>
+
+      </div>
+    </div>
+
+    <div class="row g-4" id="section-text-encrypt">
+      <div class="col-lg-6">
+        <div class="card-glass p-4 h-100">
+          <h5 class="mb-3">Encrypt Text</h5>
+          <div class="mb-3">
+            <label class="form-label">Plaintext</label>
+            <textarea class="form-control" id="pt" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0">Key (text atau hex)</label>
+              <button type="button" class="btn btn-sm btn-outline-light" id="btn-gen-key">Generate Key</button>
+            </div>
+            <input class="form-control" id="key" placeholder="contoh: my-secret-passphrase" />
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label">Key Size</label>
+              <select class="form-select" id="key-size">
+                <option value="16">AES-128</option>
+                <option value="24">AES-192</option>
+                <option value="32" selected>AES-256</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label mb-0">IV (hex, opsional)</label>
+                <button type="button" class="btn btn-sm btn-outline-light" id="btn-gen-iv">Generate IV</button>
+              </div>
+              <input class="form-control" id="iv" placeholder="Opsional" />
+              <div class="form-text" style="color:#cbd5e1;font-size:0.75rem;">Kosongkan untuk auto</div>
+            </div>
+          </div>
+          <button class="btn btn-primary w-100" id="btn-encrypt">Encrypt</button>
+          <div class="mt-3">
+            <div class="muted small mb-1">Hasil Cipher (base64) & IV</div>
+            <div class="code-box" id="out-encrypt">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card-glass p-4 h-100">
+          <h5 class="mb-3">Decrypt Text</h5>
+          <div class="mb-3">
+            <label class="form-label">Ciphertext (base64)</label>
+            <textarea class="form-control" id="ct" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0">Key (text atau hex)</label>
+              <button type="button" class="btn btn-sm btn-outline-light" id="btn-gen-key-dec">Generate Key</button>
+            </div>
+            <input class="form-control" id="key-dec" placeholder="contoh: my-secret-passphrase" />
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0">IV (hex)</label>
+              <button type="button" class="btn btn-sm btn-outline-light" id="btn-gen-iv-dec">Generate IV</button>
+            </div>
+            <input class="form-control" id="iv-dec" placeholder="32 hex dari hasil encrypt" />
+            <div class="form-text" style="color:#cbd5e1;font-size:0.75rem;">Harus sama dengan IV encrypt</div>
+          </div>
+          <button class="btn btn-primary w-100" id="btn-decrypt">Decrypt</button>
+          <div class="mt-3">
+            <div class="muted small mb-1">Plaintext</div>
+            <div class="code-box" id="out-decrypt">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mt-1" id="section-file-encrypt">
+      <div class="col-lg-6">
+        <div class="card-glass p-4 h-100">
+          <h5 class="mb-3">Encrypt Image/File</h5>
+          <div class="mb-3">
+            <label class="form-label">S-Box Selection</label>
+            <select class="form-select" id="sbox-selection">
+              <option value="aes" selected>AES Default (Standard)</option>
+              <option value="k44" id="opt-k44">K44 (Best Performer) - Generate</option>
+              <option value="k43" id="opt-k43">K43 - Generate</option>
+              <option value="k45" id="opt-k45">K45 - Generate</option>
+              <option value="identity" id="opt-identity">Identity Matrix - Generate</option>
+              <option value="k44-rotated" id="opt-k44-rotated">K44 Rotated - Generate</option>
+              <option value="custom" id="opt-custom">Custom S-box - Generate from Matrix</option>
+            </select>
+            <div class="form-text" style="color:#cbd5e1;font-size:0.75rem;margin-top:6px;" id="sbox-selection-hint">⚡ Select a preset from Matrix Config tabs (Paper/Standard/Variations) or generate Custom S-box</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">File</label>
+            <input class="form-control" type="file" id="file-enc" />
+            <div class="form-text" style="color:#cbd5e1;font-size:0.75rem;margin-top:6px;">✓ Image files (PNG, JPG, etc.): Shows histogram + entropy + NPCR + UACI analysis<br>✓ Other files (Excel, PDF, etc.): AES encryption only, no analysis</div>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0">Key (text atau hex)</label>
+              <button type="button" class="btn btn-sm btn-outline-light" id="btn-gen-key-file">Generate Key</button>
+            </div>
+            <input class="form-control" id="key-file" placeholder="contoh: my-secret-passphrase" />
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0">IV (hex, opsional)</label>
+              <button type="button" class="btn btn-sm btn-outline-light" id="btn-gen-iv-file">Generate IV</button>
+            </div>
+            <input class="form-control" id="iv-file" placeholder="Opsional" />
+            <div class="form-text" style="color:#cbd5e1;font-size:0.75rem;">Kosongkan untuk auto</div>
+          </div>
+          <button class="btn btn-primary w-100" id="btn-file-encrypt">Encrypt File</button>
+          <div class="mt-3">
+            <div class="muted small mb-1">Output</div>
+            <div class="code-box" id="out-file-encrypt">-</div>
+          </div>
+          <div id="aes-image-analysis" class="mt-3" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0">Image Histogram & Metrics</h6>
+              <button type="button" class="btn btn-sm btn-outline-light" id="btn-download-hist">Download Histogram Data</button>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <h6 class="small">Grayscale Plain</h6>
+                <div style="position: relative; height: 300px; width: 100%;">
+                  <canvas id="aes-hist-plain" style="max-height: 300px;"></canvas>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6 class="small">Grayscale Cipher</h6>
+                <div style="position: relative; height: 300px; width: 100%;">
+                  <canvas id="aes-hist-cipher" style="max-height: 300px;"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-4">
+                <h6 class="small text-danger">Red Channel (Plain)</h6>
+                <div style="position: relative; height: 280px; width: 100%;">
+                  <canvas id="aes-hist-r-plain" height="280"></canvas>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h6 class="small text-success">Green Channel (Plain)</h6>
+                <div style="position: relative; height: 280px; width: 100%;">
+                  <canvas id="aes-hist-g-plain" height="280"></canvas>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h6 class="small text-primary">Blue Channel (Plain)</h6>
+                <div style="position: relative; height: 280px; width: 100%;">
+                  <canvas id="aes-hist-b-plain" height="280"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-4">
+                <h6 class="small text-danger">Red Channel (Cipher)</h6>
+                <div style="position: relative; height: 280px; width: 100%;">
+                  <canvas id="aes-hist-r-cipher" height="280"></canvas>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h6 class="small text-success">Green Channel (Cipher)</h6>
+                <div style="position: relative; height: 280px; width: 100%;">
+                  <canvas id="aes-hist-g-cipher" height="280"></canvas>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h6 class="small text-primary">Blue Channel (Cipher)</h6>
+                <div style="position: relative; height: 280px; width: 100%;">
+                  <canvas id="aes-hist-b-cipher" height="280"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3">
+              <span class="badge bg-primary me-2" id="aes-entropy-plain">Entropy (plain): -</span>
+              <span class="badge bg-secondary me-2" id="aes-entropy-cipher">Entropy (cipher): -</span>
+              <span class="badge bg-info me-2" id="aes-npcr">NPCR: -</span>
+              <span class="badge bg-success" id="aes-uaci">UACI: -</span>
+            </div>
+            <div class="mt-3">
+              <h6 class="small">Cipher Visualization</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <p class="small text-muted mb-1">Grayscale</p>
+                  <div class="cipher-viz-container">
+                    <img id="aes-cipher-visual" src="" alt="Cipher Visualization" class="cipher-viz-img" />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <p class="small text-muted mb-1">RGB</p>
+                  <div class="cipher-viz-container">
+                    <img id="aes-cipher-visual-rgb" src="" alt="Cipher RGB Visualization" class="cipher-viz-img" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- S-box Comparison (if custom S-box used) -->
+            <div id="sbox-comparison" class="mt-4" style="display:none;">
+              <h6 class="small text-warning">Custom S-box Analysis</h6>
+              <div class="row g-3 mb-2">
+                <div class="col-md-6">
+                  <p class="small text-muted mb-1">Custom S-box Result</p>
+                  <div class="cipher-viz-container">
+                    <img id="sbox-cipher-visual" src="" alt="S-box Cipher" class="cipher-viz-img" />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <canvas id="sbox-hist-chart"></canvas>
+                </div>
+              </div>
+              <div>
+                <span class="badge bg-warning text-dark me-2" id="sbox-entropy">S-box Entropy: -</span>
+                <span class="badge bg-warning text-dark" id="sbox-npcr">S-box NPCR: -</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card-glass p-4 h-100">
+          <h5 class="mb-3">Decrypt File</h5>
+          <div class="mb-3">
+            <label class="form-label">Cipher File (.aes)</label>
+            <input class="form-control" type="file" id="file-dec" />
+            <div class="form-text" style="color:#cbd5e1;font-size:0.75rem;margin-top:6px;">⚠️ Must be the exact .aes file generated from encryption (same Key & IV required)</div>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0">Key (text atau hex)</label>
+              <button type="button" class="btn btn-sm btn-outline-light" id="btn-gen-key-file-dec">Generate Key</button>
+            </div>
+            <input class="form-control" id="key-file-dec" placeholder="contoh: my-secret-passphrase" />
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-8">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label mb-0">IV (hex)</label>
+                <button type="button" class="btn btn-sm btn-outline-light" id="btn-gen-iv-file-dec">Generate IV</button>
+              </div>
+              <input class="form-control" id="iv-file-dec" placeholder="32 hex dari hasil encrypt" />
+              <div class="form-text" style="color:#cbd5e1;font-size:0.75rem;">Harus sama dengan IV encrypt</div>
+            </div>
+            <div class="col-4">
+              <label class="form-label">Ext (opsional)</label>
+              <input class="form-control" id="ext-file-dec" placeholder="png" />
+              <div class="form-text" style="color:#cbd5e1;font-size:0.75rem;">Format output</div>
+            </div>
+          </div>
+          <button class="btn btn-primary w-100" id="btn-file-decrypt">Decrypt File</button>
+          <div class="mt-3">
+            <div class="muted small mb-1">Output</div>
+            <div class="code-box" id="out-file-decrypt">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mt-1" id="section-text-decrypt" style="display:none;">
+      <!-- Placeholder for separate text decrypt if needed -->
+    </div>
+
+    <div class="row g-4 mt-1" id="section-file-decrypt" style="display:none;">
+      <!-- Placeholder for separate file decrypt if needed -->
+    </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const show = (el, msg) => { el.textContent = msg || '-'; };
+    const handleError = (el, err) => { show(el, 'Error: ' + (err?.message || err)); };
+    async function parseResponse(res){
+      const ct = (res.headers.get('content-type')||'').toLowerCase();
+      if(ct.includes('application/json')){ try { return await res.json(); } catch(e){ return { error: e.message }; } }
+      const text = await res.text();
+      return { error: text || res.statusText };
+    }
+
+    // Matrix Presets
+    const matrixPresets = {
+      aes: [[1,0,0,0,1,1,1,1],[1,1,0,0,0,1,1,1],[1,1,1,0,0,0,1,1],[1,1,1,1,0,0,0,1],[1,1,1,1,1,0,0,0],[0,1,1,1,1,1,0,0],[0,0,1,1,1,1,1,0],[0,0,0,1,1,1,1,1]],
+      k44: [[1,1,1,1,1,0,0,0],[0,1,1,1,1,1,0,0],[0,0,1,1,1,1,1,0],[0,0,0,1,1,1,1,1],[1,0,0,0,1,1,1,1],[1,1,0,0,0,1,1,1],[1,1,1,0,0,0,1,1],[1,1,1,1,0,0,0,1]],
+      k43: [[1,1,1,1,0,0,0,1],[1,1,1,1,1,0,0,0],[0,1,1,1,1,1,0,0],[0,0,1,1,1,1,1,0],[0,0,0,1,1,1,1,1],[1,0,0,0,1,1,1,1],[1,1,0,0,0,1,1,1],[1,1,1,0,0,0,1,1]],
+      k45: [[1,1,1,0,0,0,1,1],[1,1,1,1,0,0,0,1],[1,1,1,1,1,0,0,0],[0,1,1,1,1,1,0,0],[0,0,1,1,1,1,1,0],[0,0,0,1,1,1,1,1],[1,0,0,0,1,1,1,1],[1,1,0,0,0,1,1,1]],
+      identity: [[1,0,0,0,0,0,0,0],[0,1,0,0,0,0,0,0],[0,0,1,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,1,0,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,1]]
+    };
+    let currentSbox = null; // Store generated S-box
+    let lastDisplayedRows = null; // Remember the last matrix rows shown in Current Matrix
+    let lastDisplayedName = null; // Remember the last matrix name shown
+    let activeTab = 'paper'; // Track which tab is active
+
+    // Show only selected section (or all)
+    function setVisibleSection(section) {
+      const sections = ['text-encrypt','text-decrypt','file-encrypt','file-decrypt'];
+      sections.forEach(s => {
+        const el = document.getElementById(`section-${s}`);
+        if (el) {
+          const shouldHide = section !== 'all' && section !== s;
+          el.style.display = shouldHide ? 'none' : '';
+          el.classList.toggle('d-none', shouldHide);
+          el.classList.toggle('hidden-section', shouldHide);
+        }
+      });
+      document.querySelectorAll('[data-section-btn]').forEach(btn => {
+        const isActive = btn.getAttribute('data-section-btn') === section;
+        btn.classList.toggle('btn-primary', isActive);
+        btn.classList.toggle('btn-outline-light', !isActive);
+      });
+    }
+
+    // Matrix presets with binary string representation for display
+    const MATRIX_PRESETS_DISPLAY = {
+      aes: { name: 'AES Standard', rows: ['01100011', '01110001', '01110101', '01110011', '01100101', '01100011', '00101011', '01100101'] },
+      k44: { name: 'K44 (Best Performer)', rows: ['01010111', '10101011', '11010101', '10110101', '10111010', '11010101', '01010101', '10101110'] },
+      k43: { name: 'K43', rows: ['11001001', '10010010', '01001001', '00100100', '10010010', '01001001', '00100100', '10010010'] },
+      k45: { name: 'K45', rows: ['11110000', '11001100', '10101010', '11110000', '11001100', '10101010', '11110000', '11001100'] },
+      'k44-rotated': { name: 'K44 Rotated', rows: ['01110101', '01010111', '10101011', '11010101', '11101010', '01110101', '10111010', '01011101'] },
+      identity: { name: 'Identity', rows: ['10000000', '01000000', '00100000', '00010000', '00001000', '00000100', '00000010', '00000001'] }
+    };
+
+    // Tab switching function
+    function switchTab(tab) {
+      ['paper', 'standard', 'variations', 'custom'].forEach(t => {
+        const content = document.getElementById(`${t}-content`);
+        const btn = document.getElementById(`tab-${t}`);
+        if (content) content.style.display = t === tab ? 'block' : 'none';
+        if (btn) {
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-outline-light');
+          btn.style.background = '';
+          btn.style.color = '';
+        }
+      });
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('btn-outline-light');
+        activeBtn.classList.add('btn-primary');
+        activeBtn.style.background = 'var(--accent)';
+        activeBtn.style.color = '#0d021f';
+      }
+      activeTab = tab;
+    }
+
+    // Select matrix preset function
+    function selectMatrixPreset(preset) {
+      const matrix = MATRIX_PRESETS_DISPLAY[preset];
+      if (!matrix) return;
+      // Do NOT switch to custom or fill custom inputs.
+      displayCurrentMatrix(matrix.rows, matrix.name);
+      const constant = document.getElementById('matrix-constant').value || '63';
+      displayActiveParams(matrix.name, constant);
+      // Update dropdown to enable the selected preset
+      updateSboxSelectionDropdownByPreset(preset);
+    }
+
+    // Display current matrix function
+    function displayCurrentMatrix(rows, name = null) {
+      const display = document.getElementById('current-matrix-display');
+      const text = document.getElementById('current-matrix-text');
+      if (!display || !text) return;
+      
+      if (rows && rows.length === 8) {
+        lastDisplayedRows = rows.slice();
+        lastDisplayedName = name || 'Current Matrix';
+        let html = '';
+        rows.forEach((row, i) => {
+          const hex = parseInt(row, 2).toString(16).toUpperCase().padStart(2, '0');
+          html += `<div style="margin-bottom: 4px;">`;
+          html += `R${i}: ${row} (0x${hex})`;
+          html += `</div>`;
+        });
+        text.innerHTML = html;
+        display.style.display = 'block';
+      } else {
+        display.style.display = 'none';
+      }
+    }
+
+    function applyRowsToInputs(rows){
+      if (!rows || rows.length !== 8) return;
+      rows.forEach((row, i) => {
+        const el = document.getElementById(`m-row-${i}`);
+        if (el) el.value = row;
+      });
+      switchTab('custom');
+      displayCurrentMatrix(rows, 'Custom Matrix');
+      const constant = document.getElementById('matrix-constant').value || '63';
+      displayActiveParams('Custom Matrix', constant);
+      document.getElementById('active-sbox-indicator').style.display = '';
+      document.getElementById('active-sbox-name').textContent = 'Custom Matrix';
+      document.getElementById('active-sbox-desc').textContent = `Matrix dari Current Matrix, Constant: 0x${constant}`;
+    }
+
+    function enableMatrixEdit(){
+      if (!lastDisplayedRows || lastDisplayedRows.length !== 8) return;
+      const text = document.getElementById('current-matrix-text');
+      if (!text) return;
+      
+      let html = '';
+      lastDisplayedRows.forEach((row, i) => {
+        html += `<div style="margin-bottom: 6px;">`;
+        html += `<label style="color: var(--accent2); font-size: 0.75rem;">R${i}:</label> `;
+        html += `<input type="text" class="form-control form-control-sm d-inline-block" id="edit-row-${i}" value="${row}" style="width: 180px; font-family: monospace; display: inline-block;" />`;
+        html += `</div>`;
+      });
+      text.innerHTML = html;
+      
+      document.getElementById('btn-edit-current').style.display = 'none';
+      document.getElementById('btn-save-current').style.display = 'inline-block';
+      document.getElementById('btn-cancel-current').style.display = 'inline-block';
+    }
+
+    function saveMatrixEdit(){
+      const newRows = [];
+      for (let i = 0; i < 8; i++) {
+        const el = document.getElementById(`edit-row-${i}`);
+        if (!el) return;
+        const val = el.value.trim();
+        if (!/^[01]{8}$/.test(val) && !/^[0-9a-fA-F]{1,2}$/.test(val)) {
+          alert(`R${i} tidak valid. Gunakan 8-bit binary atau hex.`);
+          return;
+        }
+        newRows.push(val);
+      }
+      
+      lastDisplayedRows = newRows.slice();
+      displayCurrentMatrix(newRows, 'Edited Matrix');
+      const constant = document.getElementById('matrix-constant').value || '63';
+      displayActiveParams(lastDisplayedName || 'Edited Matrix', constant);
+      
+      document.getElementById('btn-edit-current').style.display = 'inline-block';
+      document.getElementById('btn-save-current').style.display = 'none';
+      document.getElementById('btn-cancel-current').style.display = 'none';
+    }
+
+    function cancelMatrixEdit(){
+      if (!lastDisplayedRows) return;
+      displayCurrentMatrix(lastDisplayedRows, null);
+      
+      document.getElementById('btn-edit-current').style.display = 'inline-block';
+      document.getElementById('btn-save-current').style.display = 'none';
+      document.getElementById('btn-cancel-current').style.display = 'none';
+    }
+
+    // Display active parameters function
+    function displayActiveParams(matrixName, constant) {
+      const display = document.getElementById('active-params-display');
+      const text = document.getElementById('active-params-text');
+      if (!display || !text) return;
+      
+      if (matrixName && constant) {
+        text.innerHTML = `<strong>Matrix:</strong> ${matrixName} &nbsp;&nbsp;&nbsp; <strong>C:</strong> 0x${constant}<br><strong>Formula:</strong> S(x) = M × x<sup>-1</sup> ⊕ 0x${constant}`;
+        display.style.display = 'block';
+      }
+    }
+
+    // Update dropdown based on preset selection from tabs
+    function updateSboxSelectionDropdownByPreset(preset) {
+      const options = ['k44', 'k43', 'k45', 'identity', 'k44-rotated', 'custom'];
+      options.forEach(opt => {
+        const el = document.getElementById(`opt-${opt}`);
+        if (el) {
+          if (opt === preset) {
+            el.textContent = el.textContent.replace(' - Generate', ' - Ready to use');
+          } else if (opt !== 'custom') {
+            el.textContent = el.textContent.replace(' - Ready to use', ' - Generate');
+          }
+        }
+      });
+      // Update custom option based on currentSbox status
+      const optCustom = document.getElementById('opt-custom');
+      if (currentSbox) {
+        if (optCustom) {
+          optCustom.textContent = `Custom (${lastDisplayedName || 'S-box'}) - Ready to use`;
+        }
+      }
+    }
+
+    // Quick S-box selection + optional auto-generate for K44
+    async function quickSelectSbox(sboxType) {
+      if (sboxType === 'k44') {
+        await quickGeneratePreset('k44');
+        document.getElementById('sbox-selection').value = 'k44';
+        updateSboxSelectionDropdown();
+        return;
+      }
+      if (sboxType === 'aes') {
+        document.getElementById('sbox-selection').value = 'aes';
+        updateSboxSelectionDropdown();
+        document.getElementById('active-sbox-indicator').style.display = '';
+        document.getElementById('active-sbox-name').textContent = 'AES Standard';
+        document.getElementById('active-sbox-desc').textContent = 'Default AES S-box';
+        return;
+      }
+      if (sboxType === 'custom') {
+        if (!currentSbox) {
+          alert('Generate custom S-box dulu di atas.');
+          return;
+        }
+        document.getElementById('sbox-selection').value = 'custom';
+        updateSboxSelectionDropdown();
+        document.getElementById('active-sbox-indicator').style.display = '';
+        document.getElementById('active-sbox-name').textContent = 'Custom S-box';
+        document.getElementById('active-sbox-desc').textContent = 'Menggunakan S-box hasil generate';
+        return;
+      }
+    }
+
+    // Auto-generate preset (e.g., K44) and hydrate UI
+    async function quickGeneratePreset(presetKey) {
+      const preset = MATRIX_PRESETS_DISPLAY[presetKey];
+      if (!preset) return;
+      // Fill rows
+      preset.rows.forEach((row, i) => {
+        const el = document.getElementById(`m-row-${i}`);
+        if (el) el.value = row;
+      });
+      switchTab('custom');
+      displayCurrentMatrix(preset.rows, preset.name);
+      const constant = document.getElementById('matrix-constant').value || '63';
+      displayActiveParams(preset.name, constant);
+
+      // Build matrix payload (binary arrays)
+      const matrix = preset.rows.map(r => r.split('').map(x => parseInt(x)));
+      try {
+        const res = await fetch('/api/sbox/generate-from-matrix', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matrix, constant })
+        });
+        const data = await parseResponse(res);
+        if (!res.ok) throw new Error(data.error || res.statusText);
+
+        currentSbox = data.sbox;
+        document.getElementById('sbox-preview').style.display = '';
+        document.getElementById('sbox-preview-text').textContent =
+          `[${data.sbox.slice(0, 16).map(x => x.toString(16).padStart(2,'0')).join(', ')}] ...`;
+        document.getElementById('btn-download-sbox').disabled = false;
+        document.getElementById('btn-download-excel').disabled = false;
+        updateSboxSelectionDropdown();
+
+        // Active S-box indicator
+        document.getElementById('active-sbox-indicator').style.display = '';
+        document.getElementById('active-sbox-name').textContent = `Custom ${preset.name}`;
+        document.getElementById('active-sbox-desc').textContent = `Matrix: ${preset.name}, Constant: 0x${constant} (Ready to use!)`;
+
+        // Metrics
+        if (data.metrics) {
+          document.getElementById('crypto-analysis').style.display = '';
+          document.getElementById('metric-nl').textContent = data.metrics.nl || '-';
+          document.getElementById('metric-sac').textContent = data.metrics.sac ? data.metrics.sac.toFixed(4) : '-';
+          document.getElementById('metric-bic-sac').textContent = data.metrics.bic_sac ? data.metrics.bic_sac.toFixed(4) : '-';
+          document.getElementById('metric-lap').textContent = data.metrics.lap || '-';
+          document.getElementById('metric-dap').textContent = data.metrics.dap_prob ? data.metrics.dap_prob.toFixed(4) : '-';
+          document.getElementById('metric-du').textContent = data.metrics.du || '-';
+          document.getElementById('metric-bic-nl').textContent = data.metrics.bic_nl || '-';
+          document.getElementById('metric-alg-deg').textContent = data.metrics.alg_deg || '-';
+          document.getElementById('metric-tg').textContent = data.metrics.tg ? data.metrics.tg.toFixed(4) : '-';
+        }
+
+        document.getElementById('btn-custom-encrypt').disabled = false;
+        const nlVal = data.metrics?.nl || '-';
+        const sacVal = data.metrics?.sac ? data.metrics.sac.toFixed(4) : '-';
+        document.getElementById('custom-metrics').textContent = `NL=${nlVal}, SAC=${sacVal}`;
+      } catch (err) {
+        alert('Generate K44 gagal: ' + err.message);
+      }
+    }
+
+    // Constant input change listener
+    document.getElementById('matrix-constant')?.addEventListener('change', () => {
+      const rows = [0,1,2,3,4,5,6,7].map(i => document.getElementById(`m-row-${i}`)?.value || '').filter(v => v);
+      if (rows.length === 8) {
+        const constant = document.getElementById('matrix-constant').value || '63';
+        displayActiveParams('Custom Matrix', constant);
+      }
+      if (currentSbox) updateSboxSelectionDropdown();
+    });
+
+    // Quick constant presets
+    document.querySelectorAll('.constant-quick').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const hex = (btn.dataset.hex || '63').toUpperCase().padStart(2, '0');
+        const input = document.getElementById('matrix-constant');
+        if (input) input.value = hex;
+        if (lastDisplayedRows && lastDisplayedRows.length === 8) {
+          displayActiveParams(lastDisplayedName || 'Current Matrix', hex);
+        }
+      });
+    });
+
+    // Custom matrix row change listeners
+    for (let i = 0; i < 8; i++) {
+      document.getElementById(`m-row-${i}`)?.addEventListener('change', () => {
+        const rows = [0,1,2,3,4,5,6,7].map(j => document.getElementById(`m-row-${j}`)?.value || '').filter(v => v);
+        if (rows.length === 8) {
+          displayCurrentMatrix(rows, 'Custom Matrix');
+          const constant = document.getElementById('matrix-constant').value || '63';
+          displayActiveParams('Custom Matrix', constant);
+        }
+      });
+    }
+
+    // Initialize on page load
+    window.addEventListener('load', () => {
+      renderPresets();
+      setVisibleSection('all');
+      // Attach click listeners (fallback if inline handlers get blocked)
+      document.querySelectorAll('[data-section-btn]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-section-btn');
+          if (target) setVisibleSection(target);
+        });
+      });
+      document.getElementById('btn-edit-current')?.addEventListener('click', ()=>{
+        if (!lastDisplayedRows) {
+          alert('Belum ada Current Matrix yang ditampilkan. Pilih preset atau isi Custom terlebih dahulu.');
+          return;
+        }
+        enableMatrixEdit();
+      });
+    });
+
+    function randomIVHex(){
+      const a = new Uint8Array(16);
+      (window.crypto||window.msCrypto).getRandomValues(a);
+      let s = '';
+      for(const b of a){ s += b.toString(16).padStart(2,'0'); }
+      return s;
+    }
+    function randomHex(bytes){
+      const a = new Uint8Array(bytes);
+      (window.crypto||window.msCrypto).getRandomValues(a);
+      let s = '';
+      for(const b of a){ s += b.toString(16).padStart(2,'0'); }
+      return s;
+    }
+    function sanitizeIV(ivRaw, {allowEmptyForEncrypt=false}={}){
+      const v = (ivRaw||'').trim();
+      if(/^[0-9a-fA-F]{32}$/.test(v)) return v;
+      return allowEmptyForEncrypt ? '' : null;
+    }
+
+    // Matrix Configuration - removed old system, now using tabs
+    // No longer needed since we use switchTab() function with tabs
+
+    // Generate S-box handler
+    function renderPresets() {
+      const presets = JSON.parse(localStorage.getItem('sboxPresets') || '[]');
+      const container = document.getElementById('preset-list');
+      if (presets.length === 0) {
+        container.innerHTML = '<p class="text-muted small">No presets saved yet.</p>';
+        return;
+      }
+      container.innerHTML = presets.map((p, idx) => `
+        <div class="card-glass p-3 mb-2 d-flex justify-content-between align-items-center" style="flex-direction: row;">
+          <div style="color: var(--text);">
+            <strong>${p.name}</strong><br>
+            <small class="text-muted">Matrix: ${p.preset} | C=0x${p.constant}</small>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-light" onclick="loadPreset(${idx})">Load</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deletePreset(${idx})">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function savePreset() {
+      const name = document.getElementById('preset-name').value.trim();
+      if (!name) { alert('Masukkan nama preset'); return; }
+      
+      const constant = document.getElementById('matrix-constant').value;
+      let matrix = [];
+      let preset = 'custom';
+      
+      // Get matrix rows from inputs
+      for (let i = 0; i < 8; i++) {
+        const val = document.getElementById(`m-row-${i}`)?.value.trim() || '';
+        matrix.push(val);
+      }
+      
+      // Determine preset name from rows
+      for (const [key, data] of Object.entries(MATRIX_PRESETS_DISPLAY)) {
+        if (JSON.stringify(data.rows) === JSON.stringify(matrix)) {
+          preset = key;
+          break;
+        }
+      }
+      
+      const presets = JSON.parse(localStorage.getItem('sboxPresets') || '[]');
+      presets.push({ name, preset, constant, matrix });
+      localStorage.setItem('sboxPresets', JSON.stringify(presets));
+      
+      console.log('✅ Preset saved:', name, presets);
+      document.getElementById('preset-name').value = '';
+      renderPresets();
+      alert('✓ Preset berhasil disimpan: ' + name);
+    }
+
+    function loadPreset(idx) {
+      const presets = JSON.parse(localStorage.getItem('sboxPresets') || '[]');
+      const p = presets[idx];
+      
+      document.getElementById('matrix-constant').value = p.constant;
+      
+      // Load matrix rows
+      if (p.matrix && p.matrix.length === 8) {
+        p.matrix.forEach((val, i) => {
+          const el = document.getElementById(`m-row-${i}`);
+          if (el) el.value = val;
+        });
+        switchTab('custom');
+        const rows = p.matrix;
+        displayCurrentMatrix(rows, MATRIX_PRESETS_DISPLAY[p.preset]?.name || 'Custom Matrix');
+        displayActiveParams(MATRIX_PRESETS_DISPLAY[p.preset]?.name || 'Custom Matrix', p.constant);
+      }
+      
+      alert(`Preset "${p.name}" loaded!`);
+    }
+
+    function deletePreset(idx) {
+      if (!confirm('Delete this preset?')) return;
+      const presets = JSON.parse(localStorage.getItem('sboxPresets') || '[]');
+      presets.splice(idx, 1);
+      localStorage.setItem('sboxPresets', JSON.stringify(presets));
+      renderPresets();
+    }
+
+    document.getElementById('btn-save-preset')?.addEventListener('click', savePreset);
+    renderPresets(); // Initial render
+
+    // Handle S-box selection dropdown
+    document.getElementById('sbox-selection')?.addEventListener('change', (e) => {
+      const selectedValue = e.target.value;
+      if (selectedValue === 'aes') {
+        console.log('Selected: AES Default S-box');
+        // AES uses standard values, no special handling needed
+      } else {
+        console.log('Selected preset:', selectedValue);
+        // For other presets, we could add logic to load their config if needed
+      }
+    });
+
+    // Ensure AES option (first option) is always enabled
+    const optAes = document.querySelector('#sbox-selection option[value="aes"]');
+    if (optAes) optAes.disabled = false;
+
+    // Quick Encrypt buttons for K44, AES, Custom S-box
+    document.getElementById('btn-k44-encrypt')?.addEventListener('click', async () => {
+      await quickSelectSbox('k44');
+      setTimeout(() => {
+        document.getElementById('file-enc').scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    });
+
+    document.getElementById('btn-aes-encrypt')?.addEventListener('click', () => {
+      quickSelectSbox('aes');
+      setTimeout(() => {
+        document.getElementById('file-enc').scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    });
+
+    document.getElementById('btn-custom-encrypt')?.addEventListener('click', () => {
+      quickSelectSbox('custom');
+      setTimeout(() => {
+        document.getElementById('file-enc').scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    });
+
+    document.getElementById('btn-image-decrypt')?.addEventListener('click', () => {
+      document.getElementById('file-dec').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // Show text encrypt/decrypt sections
+    document.getElementById('btn-show-text-encrypt')?.addEventListener('click', () => {
+      const el = document.getElementById('pt');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => el.focus(), 500);
+      }
+    });
+
+    document.getElementById('btn-show-text-decrypt')?.addEventListener('click', () => {
+      const el = document.getElementById('ct');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => el.focus(), 500);
+      }
+    });
+
+
+    document.getElementById('btn-generate-sbox')?.addEventListener('click', async ()=>{
+      const constant = document.getElementById('matrix-constant').value;
+      let sourceRows = null;
+      let matrixName = 'Custom';
+
+      // If not on Custom tab, use the Current Matrix display (inline edits preserved)
+      if (activeTab !== 'custom' && lastDisplayedRows && lastDisplayedRows.length === 8) {
+        sourceRows = lastDisplayedRows.slice();
+        matrixName = lastDisplayedName || 'Current Matrix';
+      } else {
+        // Otherwise read from Custom inputs
+        sourceRows = [];
+        for (let i = 0; i < 8; i++) {
+          const val = document.getElementById(`m-row-${i}`)?.value.trim() || '';
+          if (!val) { alert('Please fill all 8 matrix rows'); return; }
+          sourceRows.push(val);
+        }
+        // Determine matrix preset name from rows (if exact match)
+        for (const [, data] of Object.entries(MATRIX_PRESETS_DISPLAY)) {
+          if (JSON.stringify(data.rows) === JSON.stringify(sourceRows)) {
+            matrixName = data.name;
+            break;
+          }
+        }
+      }
+
+      // Convert rows to binary arrays for API
+      const matrix = [];
+      for (let i = 0; i < 8; i++) {
+        const val = sourceRows[i];
+        if (/^[01]{8}$/.test(val)) {
+          matrix.push(val.split('').map(x => parseInt(x)));
+        } else if (/^[0-9a-fA-F]{1,2}$/.test(val)) {
+          const num = parseInt(val, 16);
+          matrix.push(num.toString(2).padStart(8, '0').split('').map(x => parseInt(x)));
+        } else {
+          alert(`Row ${i} invalid. Use 8-bit binary or hex.`);
+          return;
+        }
+      }
+
+      try {
+        const res = await fetch('/api/sbox/generate-from-matrix', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matrix, constant })
+        });
+        const data = await parseResponse(res);
+        if (!res.ok) throw new Error(data.error || res.statusText);
+
+        currentSbox = data.sbox;
+        document.getElementById('sbox-preview').style.display = '';
+        document.getElementById('sbox-preview-text').textContent = 
+          `[${data.sbox.slice(0, 16).map(x => x.toString(16).padStart(2,'0')).join(', ')}] ...`;
+        document.getElementById('btn-download-sbox').disabled = false;
+        document.getElementById('btn-download-excel').disabled = false;
+        const customOpt = document.getElementById('sbox-selection').querySelector('option[value="custom"]');
+        if (customOpt) {
+          customOpt.disabled = false;
+          customOpt.textContent = `Custom (${matrixName}, c=0x${constant})`;
+        }
+
+        // Show active S-box indicator
+        document.getElementById('active-sbox-indicator').style.display = '';
+        document.getElementById('active-sbox-name').textContent = `Custom ${matrixName}`;
+        document.getElementById('active-sbox-desc').textContent = `Matrix: ${matrixName}, Constant: 0x${constant} (Ready to use!)`;
+
+        // Display cryptographic analysis
+        if (data.metrics) {
+          document.getElementById('crypto-analysis').style.display = '';
+          document.getElementById('metric-nl').textContent = data.metrics.nl || '-';
+          document.getElementById('metric-sac').textContent = data.metrics.sac ? data.metrics.sac.toFixed(4) : '-';
+          document.getElementById('metric-bic-sac').textContent = data.metrics.bic_sac ? data.metrics.bic_sac.toFixed(4) : '-';
+          document.getElementById('metric-lap').textContent = data.metrics.lap || '-';
+          document.getElementById('metric-dap').textContent = data.metrics.dap_prob ? data.metrics.dap_prob.toFixed(4) : '-';
+          document.getElementById('metric-du').textContent = data.metrics.du || '-';
+          document.getElementById('metric-bic-nl').textContent = data.metrics.bic_nl || '-';
+          document.getElementById('metric-alg-deg').textContent = data.metrics.alg_deg || '-';
+          document.getElementById('metric-tg').textContent = data.metrics.tg ? data.metrics.tg.toFixed(4) : '-';
+          // Enable custom encrypt button and show metrics
+          document.getElementById('btn-custom-encrypt').disabled = false;
+          const nlVal = data.metrics?.nl || '-';
+          const sacVal = data.metrics?.sac ? data.metrics.sac.toFixed(4) : '-';
+          document.getElementById('custom-metrics').textContent = `NL=${nlVal}, SAC=${sacVal}`;
+        }
+
+        alert('✅ S-box generated! Custom option is now enabled for encryption.');
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    });
+
+    document.getElementById('btn-download-sbox')?.addEventListener('click', ()=>{
+      downloadSboxJson();
+    });
+    
+    document.getElementById('btn-download-excel')?.addEventListener('click', async ()=>{
+      downloadSboxExcel();
+    });
+
+    function downloadSboxJson(){
+      if (!currentSbox) { alert('Generate S-box terlebih dahulu'); return; }
+      const blob = new Blob([JSON.stringify({ sbox: currentSbox }, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'custom_sbox.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function downloadSboxExcel(){
+      if (!currentSbox) { alert('Generate S-box terlebih dahulu'); return; }
+      const constant = document.getElementById('matrix-constant').value;
+      // Use inline-edited Current Matrix when not on Custom tab
+      const sourceRows = (activeTab !== 'custom' && lastDisplayedRows?.length === 8) 
+        ? lastDisplayedRows 
+        : [0,1,2,3,4,5,6,7].map(i => document.getElementById(`m-row-${i}`)?.value.trim() || '');
+      let matrix = [];
+      for (let i = 0; i < 8; i++) {
+        const val = sourceRows[i];
+        if (/^[01]{8}$/.test(val)) {
+          matrix.push(val.split('').map(x => parseInt(x)));
+        } else if (/^[0-9a-fA-F]{1,2}$/.test(val)) {
+          const num = parseInt(val, 16);
+          matrix.push(num.toString(2).padStart(8, '0').split('').map(x => parseInt(x)));
+        }
+      }
+      try {
+        const res = await fetch('/api/sbox/export-excel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sbox: currentSbox, matrix, constant, preset: 'custom' })
+        });
+        const data = await parseResponse(res);
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        window.open(data.download_url, '_blank');
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    document.getElementById('btn-encrypt').addEventListener('click', async () => {
+      const out = document.getElementById('out-encrypt');
+      try {
+        const ivSan = sanitizeIV(document.getElementById('iv').value, {allowEmptyForEncrypt:true});
+        const res = await fetch('/api/aes/text/encrypt', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plaintext: document.getElementById('pt').value, key: document.getElementById('key').value, iv: ivSan })
+        });
+        const data = await parseResponse(res);
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        show(out, `ciphertext: ${data.ciphertext}\niv: ${data.iv}`);
+      } catch (e) { handleError(out, e); }
+    });
+
+    document.getElementById('btn-decrypt').addEventListener('click', async () => {
+      const out = document.getElementById('out-decrypt');
+      try {
+        const ivDec = sanitizeIV(document.getElementById('iv-dec').value);
+        if(ivDec===null) throw new Error('Masukkan IV 32 hex untuk decrypt');
+        const res = await fetch('/api/aes/text/decrypt', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ciphertext: document.getElementById('ct').value, key: document.getElementById('key-dec').value, iv: ivDec })
+        });
+        const data = await parseResponse(res);
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        show(out, data.plaintext);
+      } catch (e) { handleError(out, e); }
+    });
+
+    document.getElementById('btn-file-encrypt').addEventListener('click', async () => {
+      const out = document.getElementById('out-file-encrypt');
+      const f = document.getElementById('file-enc').files[0];
+      if (!f) { show(out, 'Pilih file terlebih dahulu'); return; }
+      
+      const sboxChoice = document.getElementById('sbox-selection').value;
+      const fd = new FormData();
+      fd.append('image', f);
+      fd.append('key', document.getElementById('key-file').value);
+      
+      // Add custom S-box if selected
+      if (sboxChoice === 'custom' && currentSbox) {
+        fd.append('sbox', JSON.stringify(currentSbox));
+      }
+      
+      try {
+        const ivSan = sanitizeIV(document.getElementById('iv-file').value, {allowEmptyForEncrypt:true});
+        if(ivSan) fd.append('iv', ivSan); // else omit to auto-generate
+        const res = await fetch('/api/aes/image/encrypt', { method: 'POST', body: fd });
+        const data = await parseResponse(res);
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        show(out, `iv: ${data.iv}\nfile: ${data.filename}\ndownload: ${data.download_url}`);
+
+        // Render analysis (if image uploaded)
+        const analysisEl = document.getElementById('aes-image-analysis');
+        const canvasPlain = document.getElementById('aes-hist-plain');
+        const canvasCipher = document.getElementById('aes-hist-cipher');
+        const canvasRPlain = document.getElementById('aes-hist-r-plain');
+        const canvasGPlain = document.getElementById('aes-hist-g-plain');
+        const canvasBPlain = document.getElementById('aes-hist-b-plain');
+        const canvasRCipher = document.getElementById('aes-hist-r-cipher');
+        const canvasGCipher = document.getElementById('aes-hist-g-cipher');
+        const canvasBCipher = document.getElementById('aes-hist-b-cipher');
+        const entropyPlainEl = document.getElementById('aes-entropy-plain');
+        const entropyCipherEl = document.getElementById('aes-entropy-cipher');
+        const npcrEl = document.getElementById('aes-npcr');
+        const uaciEl = document.getElementById('aes-uaci');
+        const visualImg = document.getElementById('aes-cipher-visual');
+        const visualRgbImg = document.getElementById('aes-cipher-visual-rgb');
+        
+        if (data.hist_plain && data.hist_cipher) {
+          analysisEl.style.display = '';
+          entropyPlainEl.textContent = `Entropy (plain): ${data.entropy_plain}`;
+          entropyCipherEl.textContent = `Entropy (cipher): ${data.entropy_cipher}`;
+          npcrEl.textContent = `NPCR: ${data.npcr}%`;
+          if (data.uaci) uaciEl.textContent = `UACI: ${data.uaci}%`;
+          if (data.visual_url) visualImg.src = data.visual_url;
+          if (data.visual_rgb_url) visualRgbImg.src = data.visual_rgb_url;
+          
+          const labels = Array.from({length:256}, (_,i) => i);
+          
+          // Grayscale histograms
+          new Chart(canvasPlain.getContext('2d'), {
+            type: 'bar',
+            data: { 
+              labels, 
+              datasets: [{ 
+                label: 'Counts', 
+                data: data.hist_plain, 
+                backgroundColor: 'rgba(140, 91, 255, 0.5)',
+                borderColor: '#8c5bff',
+                borderWidth: 0
+              }] 
+            },
+            options: { 
+              indexAxis: undefined,
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: { 
+                x: { title: { display: true, text: 'Intensity' }, ticks: { color: '#a78bfa' }, grid: { display: false } }, 
+                y: { title: { display: true, text: 'Count' }, ticks: { color: '#a78bfa' }, grid: { color: 'rgba(167, 139, 250, 0.1)' } } 
+              }, 
+              plugins: { legend: { display: false } } 
+            }
+          });
+          new Chart(canvasCipher.getContext('2d'), {
+            type: 'bar',
+            data: { 
+              labels, 
+              datasets: [{ 
+                label: 'Counts', 
+                data: data.hist_cipher, 
+                backgroundColor: 'rgba(32, 201, 151, 0.5)',
+                borderColor: '#20c997',
+                borderWidth: 0
+              }] 
+            },
+            options: { 
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: { 
+                x: { title: { display: true, text: 'Intensity' }, ticks: { color: '#a78bfa' }, grid: { display: false } }, 
+                y: { title: { display: true, text: 'Count' }, ticks: { color: '#a78bfa' }, grid: { color: 'rgba(167, 139, 250, 0.1)' } } 
+              }, 
+              plugins: { legend: { display: false } } 
+            }
+          });
+          
+          // RGB histograms
+          console.log('RGB data check:', { hist_rgb_plain: !!data.hist_rgb_plain, hist_rgb_cipher: !!data.hist_rgb_cipher });
+          if (data.hist_rgb_plain && data.hist_rgb_cipher && data.hist_rgb_plain.r && data.hist_rgb_cipher.r) {
+            window.histogramData = data; // Store for download
+            
+            const chartOpts = {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: { 
+                x: { title: { display: true, text: 'Intensity' }, ticks: { color: '#a78bfa' }, grid: { display: false } }, 
+                y: { title: { display: true, text: 'Count' }, ticks: { color: '#a78bfa' }, grid: { color: 'rgba(167, 139, 250, 0.1)' } } 
+              },
+              plugins: { legend: { display: false } }
+            };
+            
+            try {
+              new Chart(canvasRPlain.getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Red', data: data.hist_rgb_plain.r, backgroundColor: 'rgba(220, 53, 69, 0.5)', borderColor: '#dc3545', borderWidth: 0 }] },
+                options: chartOpts
+              });
+              new Chart(canvasGPlain.getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Green', data: data.hist_rgb_plain.g, backgroundColor: 'rgba(40, 167, 69, 0.5)', borderColor: '#28a745', borderWidth: 0 }] },
+                options: chartOpts
+              });
+              new Chart(canvasBPlain.getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Blue', data: data.hist_rgb_plain.b, backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: '#007bff', borderWidth: 0 }] },
+                options: chartOpts
+              });
+              
+              new Chart(canvasRCipher.getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Red', data: data.hist_rgb_cipher.r, backgroundColor: 'rgba(220, 53, 69, 0.5)', borderColor: '#dc3545', borderWidth: 0 }] },
+                options: chartOpts
+              });
+              new Chart(canvasGCipher.getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Green', data: data.hist_rgb_cipher.g, backgroundColor: 'rgba(40, 167, 69, 0.5)', borderColor: '#28a745', borderWidth: 0 }] },
+                options: chartOpts
+              });
+              new Chart(canvasBCipher.getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Blue', data: data.hist_rgb_cipher.b, backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: '#007bff', borderWidth: 0 }] },
+                options: chartOpts
+              });
+              console.log('RGB histograms rendered successfully');
+            } catch (e) {
+              console.error('RGB histogram rendering error:', e);
+            }
+          } else {
+            console.warn('RGB histogram data missing or incomplete');
+          }
+          
+          
+          // S-box comparison if available
+          if (data.sbox_hist && data.sbox_visual_url) {
+            const sboxCompDiv = document.getElementById('sbox-comparison');
+            sboxCompDiv.style.display = '';
+            document.getElementById('sbox-cipher-visual').src = data.sbox_visual_url;
+            document.getElementById('sbox-entropy').textContent = `S-box Entropy: ${data.sbox_entropy || '-'}`;
+            document.getElementById('sbox-npcr').textContent = `S-box NPCR: ${data.npcr_sbox || '-'}`;
+            
+            // Render S-box histogram comparison
+            const sboxCanvas = document.getElementById('sbox-hist-chart');
+            new Chart(sboxCanvas.getContext('2d'), {
+              type: 'line',
+              data: { 
+                labels, 
+                datasets: [
+                  { label: 'AES Cipher', data: data.hist_cipher, borderColor: '#8c5bff', tension: 0.2, pointRadius: 0 },
+                  { label: 'Custom S-box', data: data.sbox_hist, borderColor: '#ffc107', tension: 0.2, pointRadius: 0 }
+                ] 
+              },
+              options: chartOpts
+            });
+          } else {
+            document.getElementById('sbox-comparison').style.display = 'none';
+          }
+          
+        } else if (data.analysis_error) {
+          analysisEl.style.display = '';
+          entropyPlainEl.textContent = `Analysis error: ${data.analysis_error}`;
+          entropyCipherEl.textContent = '';
+          npcrEl.textContent = '';
+        } else {
+          analysisEl.style.display = 'none';
+        }
+      } catch (e) { handleError(out, e); }
+    });
+
+    document.getElementById('btn-file-decrypt').addEventListener('click', async () => {
+      const out = document.getElementById('out-file-decrypt');
+      const f = document.getElementById('file-dec').files[0];
+      if (!f) { show(out, 'Pilih cipher file (.aes)'); return; }
+      const fd = new FormData();
+      fd.append('cipher', f);
+      fd.append('key', document.getElementById('key-file-dec').value);
+      fd.append('iv', document.getElementById('iv-file-dec').value);
+      fd.append('ext', document.getElementById('ext-file-dec').value);
+      try {
+        const ivDec = sanitizeIV(document.getElementById('iv-file-dec').value);
+        if(ivDec===null) throw new Error('Masukkan IV 32 hex untuk decrypt');
+        fd.set('iv', ivDec);
+        const res = await fetch('/api/aes/image/decrypt', { method: 'POST', body: fd });
+        const data = await parseResponse(res);
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        show(out, `file: ${data.filename}\ndownload: ${data.download_url}`);
+      } catch (e) { handleError(out, e); }
+    });
+
+    document.getElementById('btn-gen-iv')?.addEventListener('click', ()=>{
+      document.getElementById('iv').value = randomIVHex();
+    });
+    document.getElementById('btn-gen-iv-file')?.addEventListener('click', ()=>{
+      document.getElementById('iv-file').value = randomIVHex();
+    });
+    document.getElementById('btn-gen-key')?.addEventListener('click', ()=>{
+      const size = parseInt(document.getElementById('key-size').value||'32',10);
+      document.getElementById('key').value = randomHex(size);
+    });
+    document.getElementById('btn-gen-key-dec')?.addEventListener('click', ()=>{
+      document.getElementById('key-dec').value = randomHex(32);
+    });
+    document.getElementById('btn-gen-iv-dec')?.addEventListener('click', ()=>{
+      document.getElementById('iv-dec').value = randomIVHex();
+    });
+    document.getElementById('btn-gen-key-file')?.addEventListener('click', ()=>{
+      document.getElementById('key-file').value = randomHex(32);
+    });
+    document.getElementById('btn-gen-key-file-dec')?.addEventListener('click', ()=>{
+      document.getElementById('key-file-dec').value = randomHex(32);
+    });
+    document.getElementById('btn-gen-iv-file-dec')?.addEventListener('click', ()=>{
+      document.getElementById('iv-file-dec').value = randomIVHex();
+    });
+    
+    // Download histogram data
+    document.getElementById('btn-download-hist')?.addEventListener('click', ()=>{
+      if (!window.histogramData) {
+        alert('Belum ada data histogram. Silakan encrypt gambar terlebih dahulu.');
+        return;
+      }
+      const data = window.histogramData;
+      const exportData = {
+        entropy: {
+          plain: data.entropy_plain,
+          cipher: data.entropy_cipher
+        },
+        npcr: data.npcr,
+        uaci: data.uaci,
+        histogram_grayscale: {
+          plain: data.hist_plain,
+          cipher: data.hist_cipher
+        },
+        histogram_rgb: {
+          plain: data.hist_rgb_plain,
+          cipher: data.hist_rgb_cipher
+        }
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'aes_histogram_analysis.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Landing | S-Box Analyzer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg1: #120024;
+      --bg2: #1e0d35;
+      --accent: #8c5bff;
+      --accent2: #bfa5ff;
+      --text: #f3ecff;
+      --muted: #d6d0ff;
+    }
+    body {
+      background: radial-gradient(circle at 20% 20%, rgba(140,91,255,0.18), transparent 35%),
+                  radial-gradient(circle at 80% 0%, rgba(191,165,255,0.12), transparent 30%),
+                  linear-gradient(135deg, var(--bg1), var(--bg2));
+      color: var(--text);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+    }
+    .hero {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 96px 24px 64px;
+      text-align: center;
+    }
+    .badge-soft {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(140,91,255,0.15);
+      color: var(--accent2);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 800;
+      margin: 20px 0 16px;
+      color: var(--text);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .lead {
+      max-width: 760px;
+      margin: 0 auto 32px;
+      color: var(--muted);
+      font-size: 1.1rem;
+      line-height: 1.7;
+    }
+    .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary-soft {
+      padding: 14px 22px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0d021f;
+      font-weight: 700;
+      border: none;
+      box-shadow: 0 10px 30px rgba(140,91,255,0.35);
+    }
+    .btn-outline-soft {
+      padding: 14px 22px;
+      border-radius: 12px;
+      border: 1px solid rgba(140,91,255,0.5);
+      color: var(--accent2);
+      background: rgba(140,91,255,0.08);
+      font-weight: 700;
+    }
+    .btn-primary-soft:hover,
+    .btn-outline-soft:hover { transform: translateY(-2px); color: #0d021f; }
+    .btn-outline-soft:hover { background: rgba(140,91,255,0.15); color: var(--text); }
+    .features {
+      max-width: 1100px;
+      margin: 32px auto 0;
+      padding: 0 24px 80px;
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .feature-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(140,91,255,0.25);
+      border-radius: 16px;
+      padding: 18px;
+      color: var(--text);
+    }
+
+    a {
+  text-decoration: none !important;
+    }
+    .feature-card h4 { margin: 12px 0 8px; font-weight: 700; }
+    .feature-card p { color: var(--muted); margin: 0; }
+    .icon-circle {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      background: rgba(140,91,255,0.2);
+      color: var(--accent2);
+      font-weight: 800;
+    }
+    footer { text-align: center; color: var(--muted); padding: 32px 0 48px; font-size: 0.95rem; }
+    @media (max-width: 768px) {
+      .hero { padding: 48px 16px 32px; }
+      h1 { font-size: 28px; }
+      .lead { font-size: 1rem; }
+      .cta { flex-direction: column; width: 100%; }
+      .btn-primary-soft, .btn-outline-soft { width: 100%; justify-content: center; }
+      .navbar-custom > div { flex-direction: column; gap: 12px; }
+      .features { grid-template-columns: 1fr; padding: 0 16px 40px; }
+    }
+    .steps-section {
+      max-width: 900px;
+      margin: 48px auto 32px;
+      padding: 0 24px;
+    }
+    .steps-title {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+    .steps-subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin-bottom: 40px;
+    }
+    .step-item {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 28px;
+      padding: 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(140,91,255,0.25);
+      border-radius: 16px;
+      transition: all 0.3s ease;
+    }
+    .step-item:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: var(--accent);
+      transform: translateX(8px);
+    }
+    .step-number {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: grid;
+      place-items: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: white;
+    }
+    .step-content h3 {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent2);
+    }
+    .step-content p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .step-content .step-link {
+      display: inline-block;
+      margin-top: 8px;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .step-content .step-link:hover {
+      color: var(--accent2);
+    }
+    @media (max-width: 768px) {
+      .steps-title { font-size: 1.5rem; }
+      .step-item { flex-direction: column; align-items: flex-start; padding: 16px; }
+      .step-number { width: 40px; height: 40px; font-size: 1.2rem; }
+    }
+    .navbar-custom { background: rgba(20, 10, 40, 0.95); border-bottom: 2px solid var(--accent); padding: 16px 0; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px); }
+    .navbar-brand { color: var(--text); font-weight: 800; font-size: 1.25rem; }
+    .nav-link { color: var(--muted); padding: 8px 16px; border-radius: 8px; font-weight: 600; }
+    .nav-link:hover { color: var(--text); background: rgba(140,91,255,0.15); }
+  </style>
+</head>
+<body>
+  <nav class="navbar-custom">
+    <div class="container" style="max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+      <a class="navbar-brand" href="/">🔐 S-Box Analyzer</a>
+      <div style="display: flex; gap: 8px;">
+        <a class="nav-link" href="/analyzer">Analyzer</a>
+        <a class="nav-link" href="/aes">AES Tools</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <span class="badge-soft">🔐 S-Box Analyzer</span>
+    <h1>S-Box <span class="gradient-text">Analyzer</span></h1>
+    <p class="lead">Platform lengkap untuk analisis dan modifikasi AES S-Box dengan 4-step process. Generate, validate, konfigurasi affine matrices, dan test dengan image encryption—semuanya dalam satu tempat.</p>
+    <div class="cta">
+      <a class="btn-primary-soft" href="/analyzer">Buka Analyzer</a>
+      <a class="btn-outline-soft" href="/aes">🔐 AES Tools</a>
+      <a class="btn-outline-soft" href="/outputs">📁 Outputs</a>
+    </div>
+  </section>
+
+  <section class="steps-section">
+    <h2 class="steps-title">📋 Workflow 4-Step Process</h2>
+    <p class="steps-subtitle">Metodologi lengkap untuk konstruksi dan validasi S-Box berbasis affine transformation</p>
+    
+    <div class="step-item">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <h3>🔬 Affine Matrix Configuration</h3>
+        <p>Configure custom affine matrices 8×8 (invertible di GF(2^8)) dengan affine constant. Choose dari paper presets (K44, K43, K45), standard AES, variations, atau buat custom matrix Anda sendiri.</p>
+        <a href="/aes" class="step-link">Buka AES Tools (Matrix Config section) →</a>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <h3>🧮 S-Box Construction</h3>
+        <p>Untuk setiap kandidat affine matrix, konstruksi S-Box dengan transformasi: <strong>x → gf_inverse(x) → affine_transform(inv, Matrix, C)</strong>. Proses ini menghasilkan 256 nilai S-Box dari input 0x00-0xFF menggunakan operasi di Galois Field GF(2^8).</p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-number">3</div>
+      <div class="step-content">
+        <h3>📊 S-Box Testing & Validation</h3>
+        <p>Evaluasi properti kriptografi setiap S-Box kandidat: <strong>Bijective</strong> (1-to-1 mapping), <strong>Balanced</strong> (equal bit distribution), <strong>SAC</strong> (Strict Avalanche Criterion), <strong>Nonlinearity</strong> (resistance to linear attacks), dan <strong>Differential Uniformity</strong> (resistance to differential cryptanalysis).</p>
+        <a href="/analyzer" class="step-link">Buka Analyzer →</a>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-number">4</div>
+      <div class="step-content">
+        <h3>🏆 Final Selection & Deployment</h3>
+        <p>Ranking kandidat berdasarkan metrik gabungan (prioritas: Nonlinearity ≥ 112, SAC ≈ 0.5, Differential Uniformity ≤ 4). Pilih kandidat terbaik untuk deployment, download Excel untuk dokumentasi, dan test dengan image encryption untuk verifikasi praktis.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feature-card">
+      <div class="icon-circle">⚡</div>
+      <h4>Generate Cepat</h4>
+      <p>S-Box dengan default atau random affine matrix.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-circle">🔬</div>
+      <h4>Matrix Explorer</h4>
+      <p>Step 1 & 2: Explore kandidat affine matrix 8×8, ranking otomatis.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-circle">🔐</div>
+      <h4>AES Tools</h4>
+      <p>Encrypt/Decrypt Text & File dengan auto-IV dan passphrase key.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-circle">🔍</div>
+      <h4>Validasi Lengkap</h4>
+      <p>Bijective, balanced, SAC, nonlinearity, diff. uniformity.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-circle">📊</div>
+      <h4>Visual Tabel 16×16</h4>
+      <p>Tampilkan S-Box dan salin CSV dengan sekali klik.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-circle">🖼️</div>
+      <h4>Uji Gambar</h4>
+      <p>Hitung NPCR dan entropi untuk cipher image.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-circle">📥</div>
+      <h4>Import/Export</h4>
+      <p>Upload Excel, download kandidat terbaik untuk deployment.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div style="max-width: 1100px; margin: 0 auto;">
+      &copy; 2025 S-Box Analyzer. Cryptographic research platform for AES S-Box modification.<br>
+      <small style="opacity: 0.7; margin-top: 8px; display: block;">Developed by Davina Azalia Tara</small>
+    </div>
+  </footer>
+</body>
+</html>

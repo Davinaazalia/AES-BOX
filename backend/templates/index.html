@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S-Box Analyzer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; margin: 0; padding: 0; }
+    body {
+      background: linear-gradient(135deg, #1a0033 0%, #2d1047 50%, #1a0033 100%);
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+    }
+    .navbar-custom { background: rgba(20, 10, 40, 0.95); border-bottom: 2px solid #7c3aed; }
+    .logo { font-weight: 800; background: linear-gradient(135deg, #7c3aed, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .text-muted { color: #d9d4ff !important; }
+    label, .form-check-label { color: #e9e5ff; }
+    .container-main { width: 100%; max-width: none; padding: 40px 8px; margin: 0; }
+    .card-glass { background: rgba(45, 16, 71, 0.7); border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 16px; box-shadow: 0 8px 32px rgba(124, 58, 237, 0.15); transition: all 0.3s ease; }
+    .card-glass:hover { background: rgba(45, 16, 71, 0.85); border-color: rgba(167, 139, 250, 0.6); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(124, 58, 237, 0.25); }
+    .hero-section { background: linear-gradient(135deg, rgba(124, 58, 237, 0.25) 0%, rgba(167, 139, 250, 0.1) 100%); border: 1px solid rgba(167, 139, 250, 0.4); border-radius: 20px; padding: 80px 40px; margin-bottom: 60px; text-align: center; margin-left: -8px; margin-right: -8px; padding-left: 60px; padding-right: 60px; }
+    .section-title { font-weight: 800; font-size: 2.2rem; background: linear-gradient(135deg, #a78bfa, #e9d5ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1.5rem; }
+    .subsection-title { font-weight: 700; color: #c4b5fd; font-size: 1.1rem; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.3px; }
+    .btn-primary-custom { background: linear-gradient(135deg, #7c3aed, #a78bfa); border: none; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 600; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4); cursor: pointer; transition: all 0.3s ease; }
+    .btn-primary-custom:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(124, 58, 237, 0.6); }
+    .btn-secondary-custom { background: rgba(167, 139, 250, 0.12); border: 1px solid rgba(124, 58, 237, 0.5); color: #c4b5fd; padding: 10px 20px; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; font-weight: 600; }
+    .btn-secondary-custom:hover { background: rgba(167, 139, 250, 0.25); color: #e9d5ff; border-color: #a78bfa; transform: translateY(-2px); }
+    .btn-success-custom { background: linear-gradient(135deg, #10b981, #34d399); border: none; color: white; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+    .btn-success-custom:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5); }
+    .metric-card { background: rgba(20, 10, 40, 0.7); border: 1px solid rgba(167, 139, 250, 0.25); border-radius: 14px; padding: 20px 16px; text-align: center; transition: all 0.3s ease; }
+    .metric-card:hover { background: rgba(45, 16, 71, 0.8); border-color: rgba(167, 139, 250, 0.5); transform: translateY(-2px); }
+    .metric-label { font-size: 0.8rem; color: #9d9d9d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .metric-value { font-size: 1.9rem; font-weight: 900; color: #c4b5fd; margin-top: 10px; }
+    .metric-value.true { color: #10b981; }
+    .metric-value.false { color: #ef4444; }
+    .form-control-custom { background: rgba(20, 10, 40, 0.8); border: 1px solid rgba(167, 139, 250, 0.25); color: #e0e0e0; border-radius: 10px; transition: all 0.3s ease; padding: 0.75rem; }
+    .form-control-custom:focus { border-color: #a78bfa; background: rgba(20, 10, 40, 0.9); box-shadow: 0 0 12px rgba(167, 139, 250, 0.2); outline: none; }
+    .form-check-input-custom { background: rgba(167, 139, 250, 0.1); border: 1.5px solid #7c3aed; }
+    .form-check-input-custom:checked { background: #7c3aed; }
+    .sbox-grid { background: rgba(20, 10, 40, 0.9); border: 1px solid rgba(167, 139, 250, 0.25); border-radius: 12px; overflow: hidden; margin-top: 16px; }
+    .sbox-grid table { width: 100%; border-collapse: collapse; font-family: 'Courier New', monospace; font-size: 0.75rem; }
+    .sbox-grid th, .sbox-grid td { border: 1px solid rgba(167, 139, 250, 0.1); padding: 8px 4px; text-align: center; }
+    .sbox-grid thead { background: rgba(124, 58, 237, 0.2); }
+    .sbox-grid thead th { color: #a78bfa; font-weight: 800; }
+    .code-block { background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 10px; padding: 16px; font-family: 'Courier New', monospace; font-size: 0.9rem; max-height: 400px; overflow-y: auto; }
+    .status-badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; }
+    .status-badge.info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .status-badge.warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-bottom: 20px; width: 100%; margin-left: 0; margin-right: 0; }
+    .footer-credit { text-align: center; padding: 40px 24px; color: #9d9d9d; font-size: 0.9rem; margin-top: 50px; border-top: 1px solid rgba(167, 139, 250, 0.15); }
+    @media (max-width: 1024px) { .grid-2-col { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) {
+      .container-main { padding: 24px 12px; }
+      .hero-section { padding: 40px 20px; margin-left: -12px; margin-right: -12px; padding-left: 40px; padding-right: 40px; }
+      .section-title { font-size: 1.5rem; }
+      .btn-primary-custom, .btn-secondary-custom, .btn-success-custom { font-size: 0.9rem; padding: 10px 18px; }
+      .metric-value { font-size: 1.5rem; }
+      .sbox-grid table { font-size: 0.65rem; }
+      .code-block { font-size: 0.8rem; max-height: 250px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-custom navbar-expand-lg sticky-top">
+    <div class="container-main">
+      <a class="navbar-brand" href="/"><i class="bi bi-shield-lock"></i> <span class="logo">S-Box Analyzer</span></a>
+      <div class="ms-auto d-flex gap-2">
+        <a href="/" class="btn btn-secondary-custom">🏠 Home</a>
+        <a href="/aes" class="btn btn-secondary-custom">🔐 AES Tools</a>
+        <a href="/batch-analyzer" class="btn btn-secondary-custom">📊 Batch Analyzer</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-main">
+    <div class="hero-section">
+      <div class="section-title">📊 S-Box Analyzer</div>
+      <p class="text-muted mb-0"><strong>Step 3 & 4:</strong> Upload/Generate S-Box → Test Properties → Final Selection</p>
+    </div>
+
+    <div style="display: flex; justify-content: center; margin-bottom: 32px;">
+      <div style="width: 100%; max-width: 500px;">
+        <div class="card-glass p-4 mb-4">
+          <div class="subsection-title"><i class="bi bi-lightning"></i> S-Box Cepat</div>
+          <p class="text-muted small mb-3">Generate S-Box baru atau unduh contoh dari paper.</p>
+          <div class="mb-3">
+            <label class="small text-muted text-uppercase">Mode Generate:</label>
+            <div class="d-flex gap-3 mt-2">
+              <div class="form-check"><input class="form-check-input form-check-input-custom" type="radio" name="genMode" id="mode-default" value="default" checked><label class="form-check-label text-muted small" for="mode-default">Default Matrix</label></div>
+              <div class="form-check"><input class="form-check-input form-check-input-custom" type="radio" name="genMode" id="mode-random" value="random"><label class="form-check-label text-muted small" for="mode-random">Random Matrix</label></div>
+            </div>
+          </div>
+          <div class="d-grid gap-2 mb-3">
+            <button id="btn-gen" class="btn btn-primary-custom"><i class="bi bi-play-circle"></i> Generate S-Box</button>
+            <button id="btn-dl-excel" class="btn btn-secondary-custom"><i class="bi bi-download"></i> Download Excel</button>
+          </div>
+          <div class="d-grid gap-2">
+            <a href="/download-example/sbox1" class="btn btn-secondary-custom btn-sm"><i class="bi bi-file-earmark-arrow-down"></i> Sample 1</a>
+            <a href="/download-example/sbox2" class="btn btn-secondary-custom btn-sm"><i class="bi bi-file-earmark-arrow-down"></i> Sample 2</a>
+            <a href="/download-example/sbox3" class="btn btn-secondary-custom btn-sm"><i class="bi bi-file-earmark-arrow-down"></i> Sample 3</a>
+          </div>
+        </div>
+
+        <div class="card-glass p-4">
+          <div class="subsection-title"><i class="bi bi-cloud-upload"></i> Upload & Analisis</div>
+          <p class="text-muted small mb-3">Unggah Excel S-Box (16×16) untuk testing lengkap.</p>
+          <form action="/analyze" method="post" enctype="multipart/form-data">
+            <div class="mb-3"><label class="form-label small text-muted">File S-Box</label><input type="file" class="form-control form-control-custom" name="sbox" accept=".xlsx,.xls" required></div>
+            <div class="mb-3"><label class="form-label small text-muted">Sample Image (opsional)</label><input type="file" class="form-control form-control-custom" name="sample_img" accept="image/*"></div>
+            <button type="submit" class="btn btn-success-custom w-100"><i class="bi bi-play-fill"></i> Analyze</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: center; margin-bottom: 32px;">
+      <div style="width: 100%; max-width: 500px;">
+        <div class="card-glass p-4" id="gen-card" style="display:none;">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="subsection-title mb-0"><i class="bi bi-sparkles"></i> Hasil Generate</div>
+            <div id="gen-mode-pill" class="status-badge info">Default</div>
+          </div>
+          <div id="gen-metrics" style="display:none;">
+            <div class="row g-2 mb-4">
+              <div class="col-6"><div class="metric-card"><div class="metric-label">Bijective</div><div class="metric-value" id="m-bijective">-</div></div></div>
+              <div class="col-6"><div class="metric-card"><div class="metric-label">Balanced</div><div class="metric-value" id="m-balanced">-</div></div></div>
+              <div class="col-6"><div class="metric-card"><div class="metric-label">SAC</div><div class="metric-value" id="m-sac">-</div></div></div>
+              <div class="col-6"><div class="metric-card"><div class="metric-label">Nonlinearity</div><div class="metric-value" id="m-nl">-</div></div></div>
+              <div class="col-12"><div class="metric-card"><div class="metric-label">Diff Uniformity</div><div class="metric-value" id="m-du">-</div></div></div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <div class="small text-muted text-uppercase fw-bold">S-Box Matrix (16×16)</div>
+              <button class="btn btn-sm btn-secondary-custom" id="btn-copy-table"><i class="bi bi-clipboard"></i> Copy</button>
+            </div>
+            <div id="gen-table" class="sbox-grid"></div>
+          </div>
+          <div class="mb-3">
+            <div class="small text-muted text-uppercase fw-bold mb-2">Raw JSON</div>
+            <div class="code-block" id="gen-output"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if report %}
+    <div class="mt-5" style="display: flex; justify-content: center;">
+      <div style="width: 100%; max-width: 1200px;">
+        <div class="section-title mb-4">📈 Analysis Results</div>
+      <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+          <div class="card-glass p-4">
+            <div class="subsection-title"><i class="bi bi-check-circle"></i> Status</div>
+            <div style="font-size:1.2rem; color:#a78bfa; font-weight:700; margin-bottom:16px;">{{ report['message'] }}</div>
+            <div class="row g-2">
+              <div class="col-6"><div class="metric-card"><div class="metric-label small">Bijective</div><div class="metric-value {% if report['bijective'] %}true{% else %}false{% endif %}">{{ report['bijective']|lower }}</div></div></div>
+              <div class="col-6"><div class="metric-card"><div class="metric-label small">Balanced</div><div class="metric-value {% if report['balanced'] %}true{% else %}false{% endif %}">{{ report['balanced']|lower }}</div></div></div>
+              <div class="col-6"><div class="metric-card"><div class="metric-label small">SAC</div><div class="metric-value {% if report['sac'] %}true{% else %}false{% endif %}">{{ report['sac']|lower }}</div></div></div>
+              <div class="col-6"><div class="metric-card"><div class="metric-label small">Nonlinearity</div><div class="metric-value">{{ report['nonlinearity'] }}</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card-glass p-4">
+            <div class="subsection-title"><i class="bi bi-bar-chart"></i> Bit Balance</div>
+            <p class="text-muted small mb-3">Jumlah bit '1' per posisi (ideal ~128)</p>
+            <div class="code-block small">{% for v in report['bit_balance'] %}<div>bit {{ loop.index0 }}: <strong>{{ v }}</strong></div>{% endfor %}</div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card-glass p-4">
+            <div class="subsection-title"><i class="bi bi-diagram-3"></i> Avalanche</div>
+            <p class="text-muted small mb-3">Hamming distance per bit</p>
+            <div class="code-block small">{% for k, v in report['avalanche'].items() %}<div>{{ k }}: <strong>{{ v }}</strong></div>{% endfor %}</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-glass p-4 mb-4">
+        <div class="subsection-title"><i class="bi bi-table"></i> S-Box Matrix</div>
+        <div class="table-responsive">{{ report['matrix_html']|safe }}</div>
+      </div>
+      {% if report.get('image_cipher') %}
+      <div class="card-glass p-4">
+        <div class="subsection-title"><i class="bi bi-image"></i> Image Encryption Test</div>
+        <div class="row g-4">
+          <div class="col-md-4">
+            <p><strong>Entropy:</strong> <span style="font-size:1.8rem; color:#a78bfa; font-weight:900;">{{ report['entropy'] }}</span></p>
+            <p class="mt-3"><strong>NPCR:</strong> <span style="font-size:1.8rem; color:#a78bfa; font-weight:900;">{{ report['npcr'] }}%</span></p>
+          </div>
+          <div class="col-md-8">
+            <img src="{{ url_for('encrypted_file', filename=report['image_cipher']) }}" class="img-fluid rounded" style="border:1px solid rgba(167, 139, 250, 0.3); max-height:300px;">
+          </div>
+        </div>
+        {% if report.get('hist_plain') and report.get('hist_cipher') %}
+        <div class="mt-5">
+          <div class="subsection-title" style="font-size: 1.2rem; margin-bottom: 2rem;"><i class="bi bi-graph-up"></i> Histogram Analysis</div>
+          <div class="row g-4 mb-5">
+            <div class="col-lg-6">
+              <div style="background: rgba(20, 10, 40, 0.8); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 12px; padding: 20px;">
+                <div class="subsection-title" style="font-size:1rem; margin-bottom: 1.5rem;"><i class="bi bi-image-alt"></i> Plain Image (Grayscale)</div>
+                <canvas id="hist-plain" height="220"></canvas>
+                <script type="application/json" id="hist-plain-data">{{ report['hist_plain']|tojson }}</script>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div style="background: rgba(20, 10, 40, 0.8); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 12px; padding: 20px;">
+                <div class="subsection-title" style="font-size:1rem; margin-bottom: 1.5rem;"><i class="bi bi-shield-check"></i> Encrypted Image (Grayscale)</div>
+                <canvas id="hist-cipher" height="220"></canvas>
+                <script type="application/json" id="hist-cipher-data">{{ report['hist_cipher']|tojson }}</script>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% if report.get('hist_rgb_plain') and report.get('hist_rgb_cipher') %}
+        <div class="mt-5">
+          <div class="subsection-title" style="font-size: 1.2rem; margin-bottom: 2rem;"><i class="bi bi-palette"></i> RGB Histogram Analysis</div>
+          <div class="row g-4">
+            <div class="col-lg-6">
+              <div style="background: rgba(20, 10, 40, 0.8); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 12px; padding: 20px;">
+                <div class="subsection-title" style="font-size:1rem; margin-bottom: 1.5rem;"><i class="bi bi-image-alt"></i> Plain Image (RGB)</div>
+                <canvas id="hist-rgb-plain" height="220"></canvas>
+                <script type="application/json" id="hist-rgb-plain-data">{{ report['hist_rgb_plain']|tojson }}</script>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div style="background: rgba(20, 10, 40, 0.8); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 12px; padding: 20px;">
+                <div class="subsection-title" style="font-size:1rem; margin-bottom: 1.5rem;"><i class="bi bi-shield-check"></i> Encrypted Image (RGB)</div>
+                <canvas id="hist-rgb-cipher" height="220"></canvas>
+                <script type="application/json" id="hist-rgb-cipher-data">{{ report['hist_rgb_cipher']|tojson }}</script>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="footer-credit">
+    &copy; 2025 S-Box Analyzer | Developed by Davina Azalia Tara
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const btnGen=document.getElementById('btn-gen'),btnDlExcel=document.getElementById('btn-dl-excel'),genCard=document.getElementById('gen-card'),genOutput=document.getElementById('gen-output'),genTable=document.getElementById('gen-table'),btnCopyTable=document.getElementById('btn-copy-table'),genModePill=document.getElementById('gen-mode-pill'),genMetrics=document.getElementById('gen-metrics'),mBij=document.getElementById('m-bijective'),mBal=document.getElementById('m-balanced'),mSac=document.getElementById('m-sac'),mNl=document.getElementById('m-nl'),mDu=document.getElementById('m-du');
+    function getGenerateUrl(){return('random'===document.querySelector('input[name="genMode"]:checked').value?'/api/generate-sbox?random=true':'/api/generate-sbox');}
+    function getExcelUrl(){return('random'===document.querySelector('input[name="genMode"]:checked').value?'/api/generate-sbox-excel?random=true':'/api/generate-sbox-excel');}
+    function renderSboxTable(sbox){if(!Array.isArray(sbox)||256!==sbox.length){genTable.innerHTML='<div class="text-muted small p-3">Invalid data</div>';return;}let html='<table><thead><tr><th></th>';for(let c=0;c<16;c++)html+=`<th>${c.toString(16).toUpperCase()}</th>`;html+='</tr></thead><tbody>';for(let r=0;r<16;r++){html+=`<tr><th>${r.toString(16).toUpperCase()}</th>`;for(let c=0;c<16;c++){const v=sbox[16*r+c];html+=`<td>${v.toString(16).toUpperCase().padStart(2,'0')}</td>`;}html+='</tr>';}html+='</tbody></table>';genTable.innerHTML=html;}
+    btnGen?.addEventListener('click',async()=>{btnGen.disabled=true;btnGen.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span> Generating...';try{const res=await fetch(getGenerateUrl());if(!res.ok)throw new Error(await res.text());const data=await res.json();const mode=document.querySelector('input[name="genMode"]:checked').value;genModePill.textContent='random'===mode?'Random Matrix':'Default Matrix';genModePill.className='random'===mode?'status-badge warning':'status-badge info';let metrics=data.metrics;if(!metrics){const vres=await fetch('/api/validate-sbox',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sbox:data.sbox})});if(vres.ok)metrics=await vres.json();}if(metrics){const du=metrics.differential_uniformity??metrics.diff_uniformity??'-',nl=metrics.nonlinearity??'-';mBij.textContent=metrics.bijective?'True':'False';mBij.className='metric-value '+(metrics.bijective?'true':'false');mBal.textContent=metrics.balanced?'True':'False';mBal.className='metric-value '+(metrics.balanced?'true':'false');mSac.textContent=metrics.sac?'True':'False';mSac.className='metric-value '+(metrics.sac?'true':'false');mNl.textContent=nl;mDu.textContent=du;genMetrics.style.display='grid';}else genMetrics.style.display='none';genOutput.textContent=JSON.stringify(data,null,2);genCard.style.display='block';renderSboxTable(data.sbox);}catch(err){genOutput.textContent='Error: '+err.message;genCard.style.display='block';}finally{btnGen.disabled=false;btnGen.innerHTML='<i class="bi bi-play-circle"></i> Generate S-Box';}});
+    btnDlExcel?.addEventListener('click',()=>{window.location.href=getExcelUrl();});
+    btnCopyTable?.addEventListener('click',async()=>{const table=genTable.querySelector('table');if(!table)return;let csv='';for(let r=0;r<16;r++){const row=[];for(let c=0;c<16;c++)row.push(table.rows[r+1].cells[c+1].textContent);csv+=row.join(',')+'\n';}try{await navigator.clipboard.writeText(csv);const oldText=btnCopyTable.innerHTML;btnCopyTable.innerHTML='<i class="bi bi-check-circle"></i> Copied!';setTimeout(()=>btnCopyTable.innerHTML=oldText,1500);}catch(e){alert('Failed to copy');}});
+
+    // Histogram rendering for analysis section (if present)
+    const plainDataEl = document.getElementById('hist-plain-data');
+    const cipherDataEl = document.getElementById('hist-cipher-data');
+    if (plainDataEl && cipherDataEl) {
+      const plain = JSON.parse(plainDataEl.textContent || '[]');
+      const cipher = JSON.parse(cipherDataEl.textContent || '[]');
+      const labels = Array.from({length:256}, (_,i)=>i);
+      const ctx1 = document.getElementById('hist-plain');
+      const ctx2 = document.getElementById('hist-cipher');
+      if (ctx1 && ctx2) {
+        const chartOptions = {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, titleColor: '#a78bfa', bodyColor: '#e9d5ff', borderColor: 'rgba(167,139,250,0.5)', borderWidth: 1 }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#9d9d9d', maxRotation: 0, minRotation: 0, font: { size: 10 } },
+              grid: { display: false }
+            },
+            y: {
+              ticks: { color: '#9d9d9d', font: { size: 10 } },
+              grid: { color: 'rgba(167, 139, 250, 0.1)' }
+            }
+          }
+        };
+        new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Plain Histogram',
+              data: plain,
+              backgroundColor: 'rgba(167, 139, 250, 0.7)',
+              borderColor: 'rgba(167, 139, 250, 0.9)',
+              borderWidth: 0.5,
+              borderRadius: 2
+            }]
+          },
+          options: chartOptions
+        });
+        new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Cipher Histogram',
+              data: cipher,
+              backgroundColor: 'rgba(16, 185, 129, 0.7)',
+              borderColor: 'rgba(16, 185, 129, 0.9)',
+              borderWidth: 0.5,
+              borderRadius: 2
+            }]
+          },
+          options: chartOptions
+        });
+      }
+    }
+
+    // RGB Histogram rendering
+    const rgbPlainDataEl = document.getElementById('hist-rgb-plain-data');
+    const rgbCipherDataEl = document.getElementById('hist-rgb-cipher-data');
+    if (rgbPlainDataEl && rgbCipherDataEl) {
+      const rgbPlain = JSON.parse(rgbPlainDataEl.textContent || '[[],[],[]]');
+      const rgbCipher = JSON.parse(rgbCipherDataEl.textContent || '[[],[],[]]');
+      const labels = Array.from({length:256}, (_,i)=>i);
+      const ctxRgbPlain = document.getElementById('hist-rgb-plain');
+      const ctxRgbCipher = document.getElementById('hist-rgb-cipher');
+      
+      if (ctxRgbPlain && ctxRgbCipher) {
+        const chartOptionsRgb = {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: true, position: 'top', labels: { color: '#9d9d9d', font: { size: 11 }, usePointStyle: true } },
+            tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, titleColor: '#a78bfa', bodyColor: '#e9d5ff', borderColor: 'rgba(167,139,250,0.5)', borderWidth: 1 }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#9d9d9d', maxRotation: 0, minRotation: 0, font: { size: 9 } },
+              stacked: false,
+              grid: { display: false }
+            },
+            y: {
+              ticks: { color: '#9d9d9d', font: { size: 10 } },
+              stacked: false,
+              grid: { color: 'rgba(167, 139, 250, 0.1)' }
+            }
+          }
+        };
+        
+        new Chart(ctxRgbPlain, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              { label: 'Red', data: rgbPlain[0] || [], backgroundColor: 'rgba(239, 68, 68, 0.6)', borderWidth: 0, borderRadius: 1 },
+              { label: 'Green', data: rgbPlain[1] || [], backgroundColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 0, borderRadius: 1 },
+              { label: 'Blue', data: rgbPlain[2] || [], backgroundColor: 'rgba(59, 130, 246, 0.6)', borderWidth: 0, borderRadius: 1 }
+            ]
+          },
+          options: chartOptionsRgb
+        });
+        
+        new Chart(ctxRgbCipher, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              { label: 'Red', data: rgbCipher[0] || [], backgroundColor: 'rgba(239, 68, 68, 0.6)', borderWidth: 0, borderRadius: 1 },
+              { label: 'Green', data: rgbCipher[1] || [], backgroundColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 0, borderRadius: 1 },
+              { label: 'Blue', data: rgbCipher[2] || [], backgroundColor: 'rgba(59, 130, 246, 0.6)', borderWidth: 0, borderRadius: 1 }
+            ]
+          },
+          options: chartOptionsRgb
+        });
+      }
+    }
+  </script>
+</body>
+</html>
