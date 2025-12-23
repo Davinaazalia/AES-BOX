@@ -616,6 +616,102 @@
       <!-- Placeholder for separate file decrypt if needed -->
     </div>
 
+    <!-- Encryption & Decryption Results Section -->
+    <div class="row g-4 mt-4">
+      <div class="col-lg-6">
+        <div class="card-glass p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="section-title mb-0">🔐 Encryption Results</h5>
+            <button class="btn btn-sm btn-outline-light" id="btn-clear-encrypt-results">Clear</button>
+          </div>
+          <div id="encryption-results-container" style="max-height: 500px; overflow-y: auto;">
+            <div id="encryption-results-empty" class="text-center muted py-4">
+              No encryption results yet. Encrypt text or file to see results here.
+            </div>
+            <div id="encryption-results-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card-glass p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="section-title mb-0">🔓 Decryption Results</h5>
+            <button class="btn btn-sm btn-outline-light" id="btn-clear-decrypt-results">Clear</button>
+          </div>
+          <div id="decryption-results-container" style="max-height: 500px; overflow-y: auto;">
+            <div id="decryption-results-empty" class="text-center muted py-4">
+              No decryption results yet. Decrypt ciphertext to see results here.
+            </div>
+            <div id="decryption-results-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Available Plain Files Section -->
+    <div class="row g-4 mt-4">
+      <div class="col-12">
+        <div class="card-glass p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="section-title mb-0">� Available Plain Files</h5>
+            <button class="btn btn-sm btn-outline-light" id="btn-refresh-plain-files">🔄 Refresh</button>
+          </div>
+          <div class="muted small mb-3">Uploaded plaintext files ready to encrypt or preview</div>
+          
+          <div id="plain-files-loading" style="display: none; text-align: center; padding: 20px;">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            <p class="muted mt-2">Loading files...</p>
+          </div>
+          
+          <div id="plain-files-container">
+            <div id="plain-files-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px;">
+              <!-- Will be populated with file cards -->
+            </div>
+            <div id="plain-files-empty" class="text-center muted py-4" style="display: none;">
+              No plain files yet. Upload a file first!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Available .aes Files Section -->
+    <div class="row g-4 mt-4">
+      <div class="col-12">
+        <div class="card-glass p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="section-title mb-0">📦 Available .aes Files (Encrypted)</h5>
+            <button class="btn btn-sm btn-outline-light" id="btn-refresh-aes-files">🔄 Refresh</button>
+          </div>
+          <div class="muted small mb-3">Encrypted files ready to download and decrypt</div>
+          
+          <div id="aes-files-loading" style="display: none; text-align: center; padding: 20px;">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            <p class="muted mt-2">Loading files...</p>
+          </div>
+          
+          <div id="aes-files-container" style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-sm mb-0" style="color: var(--text);">
+              <thead style="background: rgba(140,91,255,0.15); position: sticky; top: 0;">
+                <tr>
+                  <th>Filename</th>
+                  <th style="text-align: right;">Size</th>
+                  <th>Modified</th>
+                  <th style="text-align: center;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="aes-files-list">
+                <tr>
+                  <td colspan="4" class="text-center muted py-3">No .aes files yet. Encrypt a file first!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
     const show = (el, msg) => { el.textContent = msg || '-'; };
@@ -1286,30 +1382,66 @@
     document.getElementById('btn-encrypt').addEventListener('click', async () => {
       const out = document.getElementById('out-encrypt');
       try {
+        const plaintext = document.getElementById('pt').value;
         const ivSan = sanitizeIV(document.getElementById('iv').value, {allowEmptyForEncrypt:true});
+        const keyVal = document.getElementById('key').value;
+        
+        if (!plaintext) throw new Error('Masukkan plaintext');
+        if (!keyVal) throw new Error('Masukkan key');
+        
+        show(out, '⏳ Encrypting...');
         const res = await fetch('/api/aes/text/encrypt', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plaintext: document.getElementById('pt').value, key: document.getElementById('key').value, iv: ivSan })
+          body: JSON.stringify({ plaintext: plaintext, key: keyVal, iv: ivSan })
         });
         const data = await parseResponse(res);
         if (!res.ok) throw new Error(data.error || res.statusText);
         show(out, `ciphertext: ${data.ciphertext}\niv: ${data.iv}`);
-      } catch (e) { handleError(out, e); }
+        
+        // Add to encryption results
+        try {
+          addEncryptionResult(plaintext, data.ciphertext, data.iv, keyVal);
+          console.log('✅ Result added to encryption list');
+        } catch (addErr) {
+          console.error('❌ Error adding result:', addErr);
+        }
+      } catch (e) { 
+        console.error('Encrypt error:', e);
+        handleError(out, e); 
+      }
     });
 
     document.getElementById('btn-decrypt').addEventListener('click', async () => {
       const out = document.getElementById('out-decrypt');
       try {
+        const ciphertext = document.getElementById('ct').value;
         const ivDec = sanitizeIV(document.getElementById('iv-dec').value);
+        const keyVal = document.getElementById('key-dec').value;
+        
+        if (!ciphertext) throw new Error('Masukkan ciphertext');
+        if (!keyVal) throw new Error('Masukkan key');
         if(ivDec===null) throw new Error('Masukkan IV 32 hex untuk decrypt');
+        
+        show(out, '⏳ Decrypting...');
         const res = await fetch('/api/aes/text/decrypt', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ciphertext: document.getElementById('ct').value, key: document.getElementById('key-dec').value, iv: ivDec })
+          body: JSON.stringify({ ciphertext: ciphertext, key: keyVal, iv: ivDec })
         });
         const data = await parseResponse(res);
         if (!res.ok) throw new Error(data.error || res.statusText);
         show(out, data.plaintext);
-      } catch (e) { handleError(out, e); }
+        
+        // Add to decryption results
+        try {
+          addDecryptionResult(ciphertext, data.plaintext, ivDec, keyVal);
+          console.log('✅ Result added to decryption list');
+        } catch (addErr) {
+          console.error('❌ Error adding result:', addErr);
+        }
+      } catch (e) { 
+        console.error('Decrypt error:', e);
+        handleError(out, e); 
+      }
     });
 
     document.getElementById('btn-file-encrypt').addEventListener('click', async () => {
@@ -1363,8 +1495,11 @@
           
           const labels = Array.from({length:256}, (_,i) => i);
           
+          // Destroy old charts before creating new ones
+          destroyAllCharts();
+          
           // Grayscale histograms
-          new Chart(canvasPlain.getContext('2d'), {
+          chartInstances.plainGrayscale = new Chart(canvasPlain.getContext('2d'), {
             type: 'bar',
             data: { 
               labels, 
@@ -1387,7 +1522,8 @@
               plugins: { legend: { display: false } } 
             }
           });
-          new Chart(canvasCipher.getContext('2d'), {
+          
+          chartInstances.cipherGrayscale = new Chart(canvasCipher.getContext('2d'), {
             type: 'bar',
             data: { 
               labels, 
@@ -1426,33 +1562,33 @@
             };
             
             try {
-              new Chart(canvasRPlain.getContext('2d'), {
+              chartInstances.plainRed = new Chart(canvasRPlain.getContext('2d'), {
                 type: 'bar',
                 data: { labels, datasets: [{ label: 'Red', data: data.hist_rgb_plain.r, backgroundColor: 'rgba(220, 53, 69, 0.5)', borderColor: '#dc3545', borderWidth: 0 }] },
                 options: chartOpts
               });
-              new Chart(canvasGPlain.getContext('2d'), {
+              chartInstances.plainGreen = new Chart(canvasGPlain.getContext('2d'), {
                 type: 'bar',
                 data: { labels, datasets: [{ label: 'Green', data: data.hist_rgb_plain.g, backgroundColor: 'rgba(40, 167, 69, 0.5)', borderColor: '#28a745', borderWidth: 0 }] },
                 options: chartOpts
               });
-              new Chart(canvasBPlain.getContext('2d'), {
+              chartInstances.plainBlue = new Chart(canvasBPlain.getContext('2d'), {
                 type: 'bar',
                 data: { labels, datasets: [{ label: 'Blue', data: data.hist_rgb_plain.b, backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: '#007bff', borderWidth: 0 }] },
                 options: chartOpts
               });
               
-              new Chart(canvasRCipher.getContext('2d'), {
+              chartInstances.cipherRed = new Chart(canvasRCipher.getContext('2d'), {
                 type: 'bar',
                 data: { labels, datasets: [{ label: 'Red', data: data.hist_rgb_cipher.r, backgroundColor: 'rgba(220, 53, 69, 0.5)', borderColor: '#dc3545', borderWidth: 0 }] },
                 options: chartOpts
               });
-              new Chart(canvasGCipher.getContext('2d'), {
+              chartInstances.cipherGreen = new Chart(canvasGCipher.getContext('2d'), {
                 type: 'bar',
                 data: { labels, datasets: [{ label: 'Green', data: data.hist_rgb_cipher.g, backgroundColor: 'rgba(40, 167, 69, 0.5)', borderColor: '#28a745', borderWidth: 0 }] },
                 options: chartOpts
               });
-              new Chart(canvasBCipher.getContext('2d'), {
+              chartInstances.cipherBlue = new Chart(canvasBCipher.getContext('2d'), {
                 type: 'bar',
                 data: { labels, datasets: [{ label: 'Blue', data: data.hist_rgb_cipher.b, backgroundColor: 'rgba(0, 123, 255, 0.5)', borderColor: '#007bff', borderWidth: 0 }] },
                 options: chartOpts
@@ -1476,7 +1612,7 @@
             
             // Render S-box histogram comparison
             const sboxCanvas = document.getElementById('sbox-hist-chart');
-            new Chart(sboxCanvas.getContext('2d'), {
+            chartInstances.sboxChart = new Chart(sboxCanvas.getContext('2d'), {
               type: 'line',
               data: { 
                 labels, 
@@ -1578,6 +1714,409 @@
       a.download = 'aes_histogram_analysis.json';
       a.click();
       URL.revokeObjectURL(url);
+    });
+
+    // Encryption/Decryption Results Management
+    const encryptionResults = [];
+    const decryptionResults = [];
+    const MAX_RESULTS = 10;
+    
+    // Chart instances storage for cleanup
+    const chartInstances = {
+      plainGrayscale: null,
+      cipherGrayscale: null,
+      plainRed: null,
+      plainGreen: null,
+      plainBlue: null,
+      cipherRed: null,
+      cipherGreen: null,
+      cipherBlue: null,
+      sboxChart: null
+    };
+    
+    // Helper: Destroy all existing charts
+    function destroyAllCharts() {
+      Object.keys(chartInstances).forEach(key => {
+        if (chartInstances[key]) {
+          chartInstances[key].destroy();
+          chartInstances[key] = null;
+        }
+      });
+    }
+
+    // Helper: Use encryption result for decryption
+    function useForDecrypt(resultId) {
+      const result = encryptionResults.find(r => r.id === resultId);
+      if (result) {
+        document.getElementById('ct').value = result.ciphertext_full;
+        document.getElementById('iv-dec').value = result.iv;
+        document.getElementById('key-dec').value = result.key_preview;
+        document.getElementById('ct').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // Helper: Use decryption result for encryption
+    function useForEncrypt(resultId) {
+      const result = decryptionResults.find(r => r.id === resultId);
+      if (result) {
+        document.getElementById('pt').value = result.plaintext_full;
+        document.getElementById('pt').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function addEncryptionResult(plaintext, ciphertext, iv, key) {
+      console.log('🔵 addEncryptionResult called with:', {plaintext: plaintext?.substring(0, 20), iv, key: key?.substring(0, 20)});
+      const result = {
+        id: Date.now(),
+        plaintext: plaintext.substring(0, 50) + (plaintext.length > 50 ? '...' : ''),
+        ciphertext: ciphertext.substring(0, 30) + '...',
+        ciphertext_full: ciphertext,
+        iv: iv,
+        key_preview: key.substring(0, 20) + (key.length > 20 ? '...' : ''),
+        timestamp: new Date().toLocaleTimeString()
+      };
+      
+      encryptionResults.unshift(result);
+      if (encryptionResults.length > MAX_RESULTS) encryptionResults.pop();
+      
+      renderEncryptionResults();
+    }
+
+    function addDecryptionResult(ciphertext, plaintext, iv, key) {
+      const result = {
+        id: Date.now(),
+        ciphertext: ciphertext.substring(0, 30) + '...',
+        plaintext: plaintext.substring(0, 50) + (plaintext.length > 50 ? '...' : ''),
+        plaintext_full: plaintext,
+        iv: iv,
+        key_preview: key.substring(0, 20) + (key.length > 20 ? '...' : ''),
+        timestamp: new Date().toLocaleTimeString()
+      };
+      
+      decryptionResults.unshift(result);
+      if (decryptionResults.length > MAX_RESULTS) decryptionResults.pop();
+      
+      renderDecryptionResults();
+    }
+
+    function renderEncryptionResults() {
+      console.log('🟢 renderEncryptionResults called. Results count:', encryptionResults.length);
+      const listEl = document.getElementById('encryption-results-list');
+      const emptyEl = document.getElementById('encryption-results-empty');
+      
+      console.log('Elements found:', {listEl: !!listEl, emptyEl: !!emptyEl});
+      
+      if (encryptionResults.length === 0) {
+        listEl.innerHTML = '';
+        emptyEl.style.display = 'block';
+        return;
+      }
+      
+      emptyEl.style.display = 'none';
+      let html = '';
+      
+      encryptionResults.forEach((result, idx) => {
+        html += `
+          <div style="
+            background: rgba(140,91,255,0.1);
+            border: 1px solid rgba(140,91,255,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+          ">
+            <div style="font-size: 0.8rem; color: var(--muted); margin-bottom: 6px;">
+              ${result.timestamp}
+            </div>
+            <div style="margin-bottom: 8px;">
+              <div style="color: var(--accent2); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                📄 Plaintext:
+              </div>
+              <div style="
+                background: rgba(0,0,0,0.3);
+                padding: 8px;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                font-family: monospace;
+                word-break: break-all;
+                color: #90ee90;
+              ">
+                ${result.plaintext}
+              </div>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <div style="color: var(--accent2); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                🔐 Ciphertext:
+              </div>
+              <div style="
+                background: rgba(0,0,0,0.3);
+                padding: 8px;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                font-family: monospace;
+                word-break: break-all;
+                color: #ffa500;
+              ">
+                ${result.ciphertext}
+              </div>
+              <button class="btn btn-xs btn-outline-light" style="
+                font-size: 0.7rem;
+                padding: 3px 8px;
+                margin-top: 4px;
+              " onclick="useForDecrypt('${result.id}')">
+                Use for Decrypt
+              </button>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--muted);">
+              🔑 Key: ${result.key_preview} | 🔀 IV: ${result.iv.substring(0, 16)}...
+            </div>
+          </div>
+        `;
+      });
+      
+      listEl.innerHTML = html;
+    }
+
+    function renderDecryptionResults() {
+      const listEl = document.getElementById('decryption-results-list');
+      const emptyEl = document.getElementById('decryption-results-empty');
+      
+      if (decryptionResults.length === 0) {
+        listEl.innerHTML = '';
+        emptyEl.style.display = 'block';
+        return;
+      }
+      
+      emptyEl.style.display = 'none';
+      let html = '';
+      
+      decryptionResults.forEach((result, idx) => {
+        html += `
+          <div style="
+            background: rgba(140,91,255,0.1);
+            border: 1px solid rgba(140,91,255,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+          ">
+            <div style="font-size: 0.8rem; color: var(--muted); margin-bottom: 6px;">
+              ${result.timestamp}
+            </div>
+            <div style="margin-bottom: 8px;">
+              <div style="color: var(--accent2); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                🔐 Ciphertext:
+              </div>
+              <div style="
+                background: rgba(0,0,0,0.3);
+                padding: 8px;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                font-family: monospace;
+                word-break: break-all;
+                color: #ffa500;
+              ">
+                ${result.ciphertext}
+              </div>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <div style="color: var(--accent2); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                📄 Plaintext:
+              </div>
+              <div style="
+                background: rgba(0,0,0,0.3);
+                padding: 8px;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                font-family: monospace;
+                word-break: break-all;
+                color: #90ee90;
+              ">
+                ${result.plaintext}
+              </div>
+              <button class="btn btn-xs btn-outline-light" style="
+                font-size: 0.7rem;
+                padding: 3px 8px;
+                margin-top: 4px;
+              " onclick="useForEncrypt(${result.id})">
+                Copy to Encrypt
+              </button>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--muted);">
+              🔑 Key: ${result.key_preview} | 🔀 IV: ${result.iv.substring(0, 16)}...
+            </div>
+          </div>
+        `;
+      });
+      
+      listEl.innerHTML = html;
+    }
+
+    // Clear results buttons
+    document.getElementById('btn-clear-encrypt-results')?.addEventListener('click', () => {
+      encryptionResults.length = 0;
+      renderEncryptionResults();
+    });
+
+    document.getElementById('btn-clear-decrypt-results')?.addEventListener('click', () => {
+      decryptionResults.length = 0;
+      renderDecryptionResults();
+    });
+
+    // Load available .aes files
+    async function loadAesFiles() {
+      const loadingEl = document.getElementById('aes-files-loading');
+      const containerEl = document.getElementById('aes-files-container');
+      const listEl = document.getElementById('aes-files-list');
+      
+      if (loadingEl) loadingEl.style.display = 'block';
+      
+      try {
+        const res = await fetch('/api/aes/cipher-files');
+        const data = await res.json();
+        
+        if (loadingEl) loadingEl.style.display = 'none';
+        
+        if (!data.files || data.files.length === 0) {
+          if (listEl) {
+            listEl.innerHTML = '<tr><td colspan="4" class="text-center muted py-3">No .aes files yet. Encrypt a file first!</td></tr>';
+          }
+          return;
+        }
+        
+        let html = '';
+        data.files.forEach(file => {
+          const sizeDisplay = file.size_kb < 1024 ? `${file.size_kb} KB` : `${(file.size_kb / 1024).toFixed(2)} MB`;
+          html += `
+            <tr>
+              <td style="word-break: break-all;">
+                <code style="color: var(--accent2); font-size: 0.85rem;">${file.filename}</code>
+              </td>
+              <td style="text-align: right; font-size: 0.9rem;">${sizeDisplay}</td>
+              <td style="font-size: 0.85rem; color: var(--muted);">${file.modified}</td>
+              <td style="text-align: center;">
+                <a href="${file.download_url}" download class="btn btn-sm btn-outline-light" title="Download">
+                  📥
+                </a>
+              </td>
+            </tr>
+          `;
+        });
+        
+        if (listEl) listEl.innerHTML = html;
+      } catch (err) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (listEl) {
+          listEl.innerHTML = `<tr><td colspan="4" class="text-center muted py-3">Error loading files: ${err.message}</td></tr>`;
+        }
+      }
+    }
+
+    // Load available plain files
+    async function loadPlainFiles() {
+      const loadingEl = document.getElementById('plain-files-loading');
+      const gridEl = document.getElementById('plain-files-grid');
+      const emptyEl = document.getElementById('plain-files-empty');
+      
+      if (loadingEl) loadingEl.style.display = 'block';
+      
+      try {
+        const res = await fetch('/api/aes/plain-files');
+        const data = await res.json();
+        
+        if (loadingEl) loadingEl.style.display = 'none';
+        
+        if (!data.files || data.files.length === 0) {
+          if (gridEl) gridEl.style.display = 'none';
+          if (emptyEl) emptyEl.style.display = 'block';
+          return;
+        }
+        
+        let html = '';
+        data.files.forEach(file => {
+          const sizeDisplay = file.size_kb < 1024 ? `${file.size_kb} KB` : `${(file.size_kb / 1024).toFixed(2)} MB`;
+          
+          // Build card HTML
+          html += `
+            <div style="
+              background: rgba(255,255,255,0.04);
+              border: 1px solid rgba(140,91,255,0.35);
+              border-radius: 10px;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+            ">
+              <!-- Preview section -->
+              <div style="
+                background: rgba(20,10,40,0.6);
+                height: 180px;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-bottom: 1px solid rgba(140,91,255,0.2);
+              ">
+                ${file.is_image ? `
+                  <img src="${file.preview_url}" style="
+                    max-width: 100%;
+                    max-height: 100%;
+                    object-fit: contain;
+                  " alt="${file.filename}" title="${file.filename}">
+                ` : `
+                  <div style="text-align: center; color: var(--muted); font-size: 3rem;">
+                    📄
+                  </div>
+                `}
+              </div>
+              
+              <!-- Info section -->
+              <div style="padding: 12px; flex-grow: 1; display: flex; flex-direction: column;">
+                <div style="
+                  font-size: 0.85rem;
+                  color: var(--accent2);
+                  font-weight: 600;
+                  word-break: break-all;
+                  margin-bottom: 8px;
+                  flex-grow: 1;
+                ">
+                  ${file.filename}
+                </div>
+                
+                <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 6px;">
+                  ${sizeDisplay} • ${file.modified}
+                </div>
+                
+                <a href="${file.download_url}" download class="btn btn-sm btn-outline-light" style="width: 100%;">
+                  📥 Download
+                </a>
+              </div>
+            </div>
+          `;
+        });
+        
+        if (gridEl) {
+          gridEl.innerHTML = html;
+          gridEl.style.display = 'grid';
+        }
+        if (emptyEl) emptyEl.style.display = 'none';
+      } catch (err) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (emptyEl) {
+          emptyEl.style.display = 'block';
+          emptyEl.textContent = `Error loading files: ${err.message}`;
+        }
+      }
+    }
+
+    // Refresh buttons
+    document.getElementById('btn-refresh-plain-files')?.addEventListener('click', loadPlainFiles);
+    document.getElementById('btn-refresh-aes-files')?.addEventListener('click', loadAesFiles);
+
+    // Load files on page load
+    window.addEventListener('load', () => {
+      console.log('✅ Page loaded - initializing results');
+      renderEncryptionResults();
+      renderDecryptionResults();
+      loadPlainFiles();
+      loadAesFiles();
     });
   </script>
 </body>

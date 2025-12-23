@@ -801,6 +801,78 @@ def api_aes_decrypt_text():
         return jsonify({"error": f"Error: {str(e)}"}), 500
 
 
+@app.route('/api/aes/cipher-files', methods=['GET'])
+def api_list_cipher_files():
+    """List all .aes files in cipher folder"""
+    try:
+        if not os.path.exists(AES_CIPHER_FOLDER):
+            return jsonify({"files": []})
+        
+        files = []
+        for filename in os.listdir(AES_CIPHER_FOLDER):
+            if filename.endswith('.aes'):
+                filepath = os.path.join(AES_CIPHER_FOLDER, filename)
+                size = os.path.getsize(filepath)
+                mtime = os.path.getmtime(filepath)
+                from datetime import datetime as dt
+                mod_time = dt.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+                
+                files.append({
+                    'filename': filename,
+                    'size': size,
+                    'size_kb': round(size / 1024, 2),
+                    'modified': mod_time,
+                    'download_url': f'/aes-cipher/{filename}'
+                })
+        
+        # Sort by modification time (newest first)
+        files.sort(key=lambda x: x['modified'], reverse=True)
+        
+        return jsonify({"files": files})
+    except Exception as e:
+        print(f'Error listing cipher files: {e}')
+        return jsonify({"files": [], "error": str(e)}), 500
+
+
+@app.route('/api/aes/plain-files', methods=['GET'])
+def api_list_plain_files():
+    """List all plain files in upload folder"""
+    try:
+        if not os.path.exists(UPLOAD_FOLDER):
+            return jsonify({"files": []})
+        
+        files = []
+        for filename in os.listdir(UPLOAD_FOLDER):
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.isfile(filepath) and not filename.endswith('.aes'):
+                size = os.path.getsize(filepath)
+                mtime = os.path.getmtime(filepath)
+                from datetime import datetime as dt
+                mod_time = dt.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+                
+                # Check if it's an image
+                ext = os.path.splitext(filename)[1].lower().strip('.')
+                is_image = ext in ALLOWED_IMAGES
+                
+                files.append({
+                    'filename': filename,
+                    'size': size,
+                    'size_kb': round(size / 1024, 2),
+                    'modified': mod_time,
+                    'download_url': f'/uploads/{filename}',
+                    'is_image': is_image,
+                    'preview_url': f'/uploads/{filename}' if is_image else None
+                })
+        
+        # Sort by modification time (newest first)
+        files.sort(key=lambda x: x['modified'], reverse=True)
+        
+        return jsonify({"files": files})
+    except Exception as e:
+        print(f'Error listing plain files: {e}')
+        return jsonify({"files": [], "error": str(e)}), 500
+
+
 @app.route('/api/aes/image/encrypt', methods=['POST'])
 def api_aes_encrypt_image():
     if 'image' not in request.files:
