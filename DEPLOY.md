@@ -1,8 +1,61 @@
 # 🚀 Deployment Guide - AES BOX
 
-## Deploy ke Render.com (Recommended)
+### 🎯 TL;DR - GRATIS Terbaik
+**Render.com** atau **Railway.app** - kedua punya free tier yang lumayan!
 
-### Persiapan (5 menit)
+---
+
+## 🆓 OPSI GRATIS
+
+### 1. **Render.com** (Recommended - Gratis)
+- ✅ Free tier dengan 750 jam/bulan (lumayan!)
+- ✅ Auto-deploy dari GitHub
+- ✅ HTTPS included
+- ✅ Minimal downtime
+- **Cost**: Gratis (setelah free hours habis: $0.50/month)
+
+### 2. **Railway.app** (Gratis + $5 Credit)
+- ✅ Free tier dengan $5 credit/bulan
+- ✅ Auto-deploy GitHub
+- ✅ Postgres included
+- **Cost**: Gratis dengan kredit, bayar setelah habis
+
+### 3. **PythonAnywhere** (Gratis)
+- ✅ Truly free tier
+- ✅ Simple setup
+- ✅ Cocok untuk beginner
+- ❌ Fitur limited
+- **Cost**: Gratis, upgrade £4.99/month
+
+### 4. **Replit** (Gratis)
+- ✅ Super simple setup
+- ✅ No credit card needed
+- ✅ Great for learning
+- ❌ Performa lebih lambat
+- **Cost**: Gratis, upgrade $7/month
+
+### 5. **Oracle Cloud Always Free** (Truly Free!)
+- ✅ **Permanently free** (bukan trial!)
+- ✅ 2 x ARM CPU + 12 GB RAM
+- ✅ 100 GB storage
+- ❌ Setup lebih kompleks
+- **Cost**: 100% gratis selamanya
+
+### 6. **AWS Free Tier** (Gratis 12 bulan)
+- ✅ t3.micro EC2 instance gratis 12 bulan
+- ✅ Powerful
+- ❌ Perlu kartu kredit
+- ❌ Setup kompleks
+- **Cost**: Gratis 12 bulan pertama
+
+### 7. **Google Cloud Free Tier** (Gratis 12 bulan)
+- ✅ f1-micro instance gratis 12 bulan
+- ✅ Bagus untuk learning
+- **Cost**: Gratis 12 bulan pertama
+
+---
+
+## Render.com
 
 1. **Buka Render.com**
    - Daftar gratis di [render.com](https://render.com)
@@ -43,31 +96,117 @@
 
 ---
 
-## Deploy ke Railway.app (Alternatif)
+---
 
-1. **Buka railway.app**
-   - Login dengan GitHub
-   - Create new project
-   - Connect GitHub repo
+## Deploy ke Oracle Cloud Always Free (GRATIS SELAMANYA!)
 
-2. **Setup:**
+Oracle Cloud paling bagus karena **100% gratis selamanya** (bukan trial)!
+
+### Apa yang Gratis?
+- 2x ARM CPU
+- 12 GB RAM  
+- 100 GB storage
+- Unlimited bandwidth
+- **Selamanya!** (tidak perlu bayar)
+
+### Setup Steps
+
+1. **Daftar Oracle Cloud** (no credit card needed)
+   - https://www.oracle.com/cloud/free/
+
+2. **Buat Compute Instance**
+   - Pilih Ubuntu 22.04 LTS
+   - Shape: Ampere (ARM) - gratis
+   - SSH key setup
+
+3. **SSH ke Instance**
    ```bash
-   railway link
-   railway env
+   ssh -i your-key.key ubuntu@instance_ip
    ```
 
-3. **Add Env Vars:**
-   ```
-   FLASK_ENV=production
-   SECRET_KEY=<your_key>
-   ```
-
-4. **Deploy:**
+4. **Install Dependencies**
    ```bash
-   railway up
+   sudo apt update
+   sudo apt install -y python3 python3-pip git
+   cd ~
+   git clone https://github.com/Davinaazalia/AES-BOX.git
+   cd AES-BOX
+   pip3 install -r backend/requirements.txt
    ```
+
+5. **Jalankan App**
+   ```bash
+   gunicorn app_root:app --bind 0.0.0.0:5000
+   ```
+
+6. **Setup Reverse Proxy (Nginx)**
+   ```bash
+   sudo apt install -y nginx
+   sudo systemctl start nginx
+   ```
+   
+   Create `/etc/nginx/sites-available/aes-box`:
+   ```nginx
+   server {
+       listen 80;
+       server_name your_instance_ip;
+       
+       location / {
+           proxy_pass http://127.0.0.1:5000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+       }
+   }
+   ```
+   
+   Enable:
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/aes-box /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+
+7. **Setup Systemd Service (Auto-start)**
+   ```bash
+   sudo nano /etc/systemd/system/aes-box.service
+   ```
+   
+   Isi:
+   ```ini
+   [Unit]
+   Description=AES-BOX Application
+   After=network.target
+   
+   [Service]
+   User=ubuntu
+   WorkingDirectory=/home/ubuntu/AES-BOX
+   ExecStart=/usr/bin/python3 -m gunicorn app_root:app --bind 0.0.0.0:5000
+   Restart=always
+   
+   [Install]
+   WantedBy=multi-user.target
+   ```
+   
+   Enable:
+   ```bash
+   sudo systemctl enable aes-box
+   sudo systemctl start aes-box
+   ```
+
+8. **Setup Domain (Optional)**
+   - Beli domain di Namecheap/GoDaddy
+   - Point DNS ke instance IP
+   - Setup SSL dengan Let's Encrypt:
+   ```bash
+   sudo apt install -y certbot python3-certbot-nginx
+   sudo certbot --nginx -d yourdomain.com
+   ```
+
+**Done!** Aplikasi berjalan gratis selamanya di Oracle Cloud! 🎉
 
 ---
+
+
 
 ## Deploy ke PythonAnywhere (Manual)
 
@@ -143,14 +282,18 @@ docker push registry.digitalocean.com/aes-box/aes-box:latest
 
 ---
 
-## Cost Estimation
+## 💰 Cost Comparison (Gratis Options)
 
-| Platform | Cost | Notes |
-|----------|------|-------|
-| **Render.com** | Free tier | 0.50/month after free tier |
-| **Railway.app** | Free tier | $5 credit/month for paid tier |
-| **PythonAnywhere** | Free tier | £4.99/month for paid |
-| **DigitalOcean** | $4+/month | Droplet minimum |
+| Platform | Free Tier | Paid Tier | Best For |
+|----------|-----------|-----------|----------|
+| **Render.com** ⭐ | 750 hrs/month | $0.50+/month | Production apps |
+| **Railway.app** | $5 credit/month | Bayar setelah habis | Dev/Testing |
+| **PythonAnywhere** | Limited features | £4.99+/month | Beginner-friendly |
+| **Replit** | Basic | $7/month | Learning/Hobby |
+| **Oracle Cloud** 🔥 | **Gratis forever!** | - | Long-term free |
+| **AWS** | 12 months free | Bayar setelah | Scalable |
+| **Google Cloud** | 12 months free | Bayar setelah | Learning |
+| **DigitalOcean** | - | $4+/month | Reliable hosting |
 
 ---
 
