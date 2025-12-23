@@ -10,4 +10,7 @@ from app import app  # noqa: E402
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    # Production: use gunicorn
+    # Development: use debug mode
+    is_production = os.getenv('FLASK_ENV') == 'production' or os.getenv('RENDER') == 'true'
+    app.run(debug=not is_production, port=int(os.getenv('PORT', 5000)))

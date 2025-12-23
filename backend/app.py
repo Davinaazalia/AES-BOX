@@ -44,7 +44,11 @@ for path in [UPLOAD_FOLDER, GENERATED_FOLDER, ENCRYPTED_FOLDER, AES_CIPHER_FOLDE
 app = Flask(__name__, template_folder=TEMPLATE_FOLDER)
 CORS(app)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.secret_key = 'ganti_dengan_secret_key_yang_aman'
+
+# Production settings
+app.config['ENV'] = os.getenv('FLASK_ENV', 'development')
+app.config['DEBUG'] = os.getenv('FLASK_DEBUG', 'False') == 'True'
+app.secret_key = os.getenv('SECRET_KEY', 'ganti_dengan_secret_key_yang_aman')
 
 
 def validate_sbox_format(flat):
